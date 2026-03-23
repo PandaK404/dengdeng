@@ -15,6 +15,7 @@ interface Props {
   windowWidth: number
   windowHeight: number
   fixedWindowSize: boolean
+  popupLayoutMode?: string
 }
 
 interface Emits {
@@ -26,6 +27,7 @@ interface Emits {
   stopAudio: []
   testAudioError: [error: any]
   updateWindowSize: [size: { width: number, height: number, fixed: boolean }]
+  updatePopupLayoutMode: [layoutMode: string]
   configReloaded: []
 }
 
@@ -159,6 +161,7 @@ function testPopup() {
               :window-width="windowWidth"
               :window-height="windowHeight"
               :fixed-window-size="fixedWindowSize"
+              :popup-layout-mode="popupLayoutMode"
               @theme-change="$emit('themeChange', $event)"
               @toggle-always-on-top="$emit('toggleAlwaysOnTop')"
               @toggle-audio-notification="$emit('toggleAudioNotification')"
@@ -167,6 +170,7 @@ function testPopup() {
               @stop-audio="$emit('stopAudio')"
               @test-audio-error="$emit('testAudioError', $event)"
               @update-window-size="$emit('updateWindowSize', $event)"
+              @update-popup-layout-mode="$emit('updatePopupLayoutMode', $event)"
               @config-reloaded="handleConfigReloaded"
             />
           </n-tab-pane>

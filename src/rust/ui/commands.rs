@@ -124,6 +124,40 @@ pub async fn set_theme(
 }
 
 #[tauri::command]
+pub async fn get_popup_layout_mode(state: State<'_, AppState>) -> Result<String, String> {
+    let config = state
+        .config
+        .lock()
+        .map_err(|e| format!("获取配置失败: {}", e))?;
+    Ok(config.ui_config.popup_layout_mode.clone())
+}
+
+#[tauri::command]
+pub async fn set_popup_layout_mode(
+    layout_mode: String,
+    state: State<'_, AppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    if !["vertical", "split"].contains(&layout_mode.as_str()) {
+        return Err("无效的布局模式，只支持 vertical、split".to_string());
+    }
+
+    {
+        let mut config = state
+            .config
+            .lock()
+            .map_err(|e| format!("获取配置失败: {}", e))?;
+        config.ui_config.popup_layout_mode = layout_mode;
+    }
+
+    save_config(&state, &app)
+        .await
+        .map_err(|e| format!("保存配置失败: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_window_config(state: State<'_, AppState>) -> Result<WindowConfig, String> {
     let config = state
         .config

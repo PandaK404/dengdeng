@@ -21,6 +21,7 @@ interface Props {
   windowWidth: number
   windowHeight: number
   fixedWindowSize: boolean
+  popupLayoutMode?: string
 }
 
 defineProps<Props>()
@@ -96,6 +97,7 @@ interface Emits {
   stopAudio: []
   testAudioError: [error: any]
   updateWindowSize: [size: { width: number, height: number, fixed: boolean }]
+  updatePopupLayoutMode: [layoutMode: string]
   configReloaded: []
 }
 
@@ -205,8 +207,10 @@ function handleWindowSizeUpdate(size: { width: number, height: number, fixed: bo
             :window-width="windowWidth"
             :window-height="windowHeight"
             :fixed-window-size="fixedWindowSize"
+            :popup-layout-mode="popupLayoutMode"
             @toggle-always-on-top="$emit('toggleAlwaysOnTop')"
             @update-window-size="handleWindowSizeUpdate"
+            @update-popup-layout-mode="$emit('updatePopupLayoutMode', $event)"
           />
         </div>
       </n-collapse-item>

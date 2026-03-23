@@ -19,6 +19,7 @@ function createSettings() {
   const windowWidth = ref(600)
   const windowHeight = ref(900)
   const fixedWindowSize = ref(false)
+  const popupLayoutMode = ref('split')
 
   // 继续回复设置
   const continueReplyEnabled = ref(true)
@@ -95,6 +96,14 @@ function createSettings() {
       }
       catch {
         console.log('窗口设置不存在，使用默认值')
+      }
+
+      try {
+        const layoutMode = await invoke('get_popup_layout_mode')
+        popupLayoutMode.value = (layoutMode as string) || 'split'
+      }
+      catch {
+        console.log('弹窗布局设置不存在，使用默认值')
       }
 
       // 加载继续回复设置
@@ -238,6 +247,24 @@ function createSettings() {
       console.error('更新窗口大小失败:', error)
       if (message) {
         message.error(`更新窗口大小失败: ${error}`)
+      }
+    }
+  }
+
+  async function updatePopupLayoutMode(layoutMode: string) {
+    try {
+      await invoke('set_popup_layout_mode', { layoutMode })
+      popupLayoutMode.value = layoutMode
+
+      if (message) {
+        const layoutLabel = layoutMode === 'split' ? '横向分栏' : '竖向堆叠'
+        message.success(`弹窗布局已切换为：${layoutLabel}`)
+      }
+    }
+    catch (error) {
+      console.error('更新弹窗布局失败:', error)
+      if (message) {
+        message.error(`更新弹窗布局失败: ${error}`)
       }
     }
   }
@@ -426,6 +453,7 @@ function createSettings() {
     windowWidth,
     windowHeight,
     fixedWindowSize,
+    popupLayoutMode,
     windowConstraints,
     continueReplyEnabled,
     continuePrompt,
@@ -442,6 +470,7 @@ function createSettings() {
     testAudioSound,
     stopAudioSound,
     updateWindowSize,
+    updatePopupLayoutMode,
     updateReplyConfig,
     loadWindowConfig,
     setupWindowResizeListener,

@@ -38,6 +38,10 @@ pub struct UiConfig {
     // 置顶设置
     #[serde(default = "default_always_on_top")]
     pub always_on_top: bool,
+
+    // MCP 弹窗布局模式
+    #[serde(default = "default_popup_layout_mode")]
+    pub popup_layout_mode: String, // "vertical" | "split"
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -231,6 +235,7 @@ pub fn default_ui_config() -> UiConfig {
         font_config: default_font_config(),
         window_config: default_window_config(),
         always_on_top: default_always_on_top(),
+        popup_layout_mode: default_popup_layout_mode(),
     }
 }
 
@@ -344,7 +349,7 @@ pub fn default_continue_prompt() -> String {
 
 pub fn default_mcp_tools() -> HashMap<String, bool> {
     let mut tools = HashMap::new();
-    tools.insert(mcp::TOOL_ZHI.to_string(), true); // 续言工具默认启用
+    tools.insert(mcp::TOOL_XU.to_string(), true); // 续言工具默认启用
     tools.insert(mcp::TOOL_JI.to_string(), false); // 记忆管理工具默认关闭
     tools.insert(mcp::TOOL_SOU.to_string(), false); // 代码搜索工具默认关闭
     tools
@@ -376,6 +381,10 @@ pub fn default_free_width() -> f64 {
 
 pub fn default_free_height() -> f64 {
     window::DEFAULT_HEIGHT
+}
+
+pub fn default_popup_layout_mode() -> String {
+    "split".to_string()
 }
 
 pub fn default_telegram_enabled() -> bool {
@@ -677,5 +686,3 @@ pub fn default_shortcuts() -> HashMap<String, ShortcutBinding> {
 
     shortcuts
 }
-
-

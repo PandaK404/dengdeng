@@ -35,6 +35,7 @@ export function useAppManager() {
         enabled: settings.continueReplyEnabled.value,
         prompt: settings.continuePrompt.value,
       },
+      popupLayoutMode: settings.popupLayoutMode.value,
     }
 
     return config
@@ -54,6 +55,7 @@ export function useAppManager() {
       testAudio: settings.testAudioSound,
       stopAudio: settings.stopAudioSound,
       updateWindowSize: settings.updateWindowSize,
+      updatePopupLayoutMode: settings.updatePopupLayoutMode,
       updateReplyConfig: settings.updateReplyConfig,
       setMessageInstance: settings.setMessageInstance,
       reloadAllSettings: settings.reloadAllSettings,

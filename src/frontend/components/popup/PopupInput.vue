@@ -12,6 +12,7 @@ interface Props {
   request: McpRequest | null
   loading?: boolean
   submitting?: boolean
+  layoutMode?: string
 }
 
 interface Emits {
@@ -27,6 +28,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   submitting: false,
+  layoutMode: 'vertical',
 })
 
 const emit = defineEmits<Emits>()
@@ -118,6 +120,7 @@ const message = useMessage()
 
 // 计算属性
 const hasOptions = computed(() => (props.request?.predefined_options?.length ?? 0) > 0)
+const isSplitLayout = computed(() => props.layoutMode === 'split')
 const canSubmit = computed(() => {
   const hasOptionsSelected = selectedOptions.value.length > 0
   const hasInputText = userInput.value.trim().length > 0
@@ -620,13 +623,48 @@ defineExpose({
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- 预定义选项 -->
-    <div v-if="!loading && hasOptions" class="space-y-3" data-guide="predefined-options">
+  <div :class="isSplitLayout ? 'grid min-h-[280px] max-h-[42vh] gap-4 grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]' : 'space-y-3'">
+    <div
+      v-if="isSplitLayout || (!loading && hasOptions)"
+      :class="isSplitLayout ? 'flex min-h-0 flex-col rounded-lg border border-gray-700 bg-black/20 p-3' : 'space-y-3'"
+      data-guide="predefined-options"
+    >
       <h4 class="text-sm font-medium text-white">
-        请选择选项
+        预定义选项
       </h4>
-      <n-space vertical size="small">
+
+      <div
+        v-if="isSplitLayout"
+        class="min-h-0 flex-1 overflow-y-auto pr-1"
+      >
+        <n-space v-if="!loading && hasOptions" vertical size="small">
+          <div
+            v-for="(option, index) in request!.predefined_options"
+            :key="`option-${index}`"
+            class="rounded-lg border border-gray-600 bg-gray-100 p-3 cursor-pointer hover:opacity-80 transition-opacity"
+            @click="handleOptionToggle(option)"
+          >
+            <n-checkbox
+              :value="option"
+              :checked="selectedOptions.includes(option)"
+              :disabled="submitting"
+              size="medium"
+              @update:checked="(checked: boolean) => handleOptionChange(option, checked)"
+              @click.stop
+            >
+              {{ option }}
+            </n-checkbox>
+          </div>
+        </n-space>
+        <div
+          v-else
+          class="flex h-full items-center justify-center rounded-lg border border-dashed border-gray-600 px-4 text-center text-xs text-on-surface-secondary"
+        >
+          当前没有预定义选项
+        </div>
+      </div>
+
+      <n-space v-else vertical size="small">
         <div
           v-for="(option, index) in request!.predefined_options"
           :key="`option-${index}`"
@@ -647,138 +685,140 @@ defineExpose({
       </n-space>
     </div>
 
-    <!-- 图片预览区域 -->
-    <div v-if="!loading && uploadedImages.length > 0" class="space-y-3">
-      <h4 class="text-sm font-medium text-white">
-        已添加的图片 ({{ uploadedImages.length }})
-      </h4>
+    <div :class="isSplitLayout ? 'flex min-h-0 flex-col gap-3 overflow-y-auto pr-1' : 'space-y-3'">
+      <!-- 图片预览区域 -->
+      <div v-if="!loading && uploadedImages.length > 0" class="space-y-3">
+        <h4 class="text-sm font-medium text-white">
+          已添加的图片 ({{ uploadedImages.length }})
+        </h4>
 
-      <!-- 使用 Naive UI 的图片组件，支持预览和放大 -->
-      <n-image-group>
-        <div class="flex flex-wrap gap-3">
-          <div
-            v-for="(image, index) in uploadedImages"
-            :key="`image-${index}`"
-            class="relative"
-          >
-            <!-- 使用 n-image 组件，启用预览功能 -->
-            <n-image
-              :src="image"
-              width="100"
-              height="100"
-              object-fit="cover"
-              class="rounded-lg border-2 border-gray-300 hover:border-primary-400 transition-all duration-200 cursor-pointer"
-            />
-
-            <!-- 删除按钮 -->
-            <n-button
-              class="absolute -top-2 -right-2 z-10"
-              size="tiny"
-              type="error"
-              circle
-              @click="removeImage(index)"
-            >
-              <template #icon>
-                <div class="i-carbon-close w-3 h-3" />
-              </template>
-            </n-button>
-
-            <!-- 序号 -->
-            <div class="absolute bottom-1 left-1 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-sm z-5">
-              {{ index + 1 }}
-            </div>
-          </div>
-        </div>
-      </n-image-group>
-    </div>
-
-    <!-- 文本输入区域 -->
-    <div v-if="!loading" class="space-y-3">
-      <h4 class="text-sm font-medium text-white">
-        {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
-      </h4>
-
-      <!-- 自定义prompt按钮区域 -->
-      <div v-if="customPromptEnabled && customPrompts.length > 0" class="space-y-2" data-guide="custom-prompts">
-        <div class="text-xs text-on-surface-secondary flex items-center gap-2">
-          <div class="i-carbon-bookmark w-3 h-3 text-primary-500" />
-          <span>快捷模板 (拖拽调整顺序):</span>
-        </div>
-        <div
-          ref="promptContainer"
-          data-prompt-container
-          class="flex flex-wrap gap-2"
-        >
-          <div
-            v-for="prompt in sortablePrompts"
-            :key="prompt.id"
-            :title="prompt.description || (prompt.content.trim() ? prompt.content : '清空输入框')"
-            class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-container-secondary hover:bg-container-tertiary rounded transition-all duration-200 select-none border border-gray-600 text-on-surface sortable-item"
-          >
-            <!-- 拖拽手柄 -->
-            <div class="drag-handle cursor-move p-0.5 rounded hover:bg-container-tertiary transition-colors">
-              <div class="i-carbon-drag-horizontal w-3 h-3 text-on-surface-secondary" />
-            </div>
-
-            <!-- 按钮内容 -->
+        <!-- 使用 Naive UI 的图片组件，支持预览和放大 -->
+        <n-image-group>
+          <div class="flex flex-wrap gap-3">
             <div
-              class="inline-flex items-center cursor-pointer"
-              @click="handlePromptClick(prompt)"
+              v-for="(image, index) in uploadedImages"
+              :key="`image-${index}`"
+              class="relative"
             >
-              <span>{{ prompt.name }}</span>
+              <!-- 使用 n-image 组件，启用预览功能 -->
+              <n-image
+                :src="image"
+                width="100"
+                height="100"
+                object-fit="cover"
+                class="rounded-lg border-2 border-gray-300 hover:border-primary-400 transition-all duration-200 cursor-pointer"
+              />
+
+              <!-- 删除按钮 -->
+              <n-button
+                class="absolute -top-2 -right-2 z-10"
+                size="tiny"
+                type="error"
+                circle
+                @click="removeImage(index)"
+              >
+                <template #icon>
+                  <div class="i-carbon-close w-3 h-3" />
+                </template>
+              </n-button>
+
+              <!-- 序号 -->
+              <div class="absolute bottom-1 left-1 w-5 h-5 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-sm z-5">
+                {{ index + 1 }}
+              </div>
             </div>
           </div>
-        </div>
+        </n-image-group>
       </div>
 
-      <!-- 上下文追加区域 -->
-      <div v-if="customPromptEnabled && conditionalPrompts.length > 0" class="space-y-2" data-guide="context-append">
-        <div class="text-xs text-on-surface-secondary flex items-center gap-2">
-          <div class="i-carbon-settings-adjust w-3 h-3 text-primary-500" />
-          <span>上下文追加:</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
+      <!-- 文本输入区域 -->
+      <div v-if="!loading" class="space-y-3">
+        <h4 class="text-sm font-medium text-white">
+          {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
+        </h4>
+
+        <!-- 自定义prompt按钮区域 -->
+        <div v-if="customPromptEnabled && customPrompts.length > 0" class="space-y-2" data-guide="custom-prompts">
+          <div class="text-xs text-on-surface-secondary flex items-center gap-2">
+            <div class="i-carbon-bookmark w-3 h-3 text-primary-500" />
+            <span>快捷模板 (拖拽调整顺序):</span>
+          </div>
           <div
-            v-for="prompt in conditionalPrompts"
-            :key="prompt.id"
-            class="flex items-center justify-between p-2 bg-container-secondary rounded border border-gray-600 hover:bg-container-tertiary transition-colors text-xs"
+            ref="promptContainer"
+            data-prompt-container
+            class="flex flex-wrap gap-2"
           >
-            <div class="flex-1 min-w-0 mr-2">
-              <div class="text-xs text-on-surface truncate font-medium" :title="prompt.condition_text || prompt.name">
-                {{ prompt.condition_text || prompt.name }}
+            <div
+              v-for="prompt in sortablePrompts"
+              :key="prompt.id"
+              :title="prompt.description || (prompt.content.trim() ? prompt.content : '清空输入框')"
+              class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-container-secondary hover:bg-container-tertiary rounded transition-all duration-200 select-none border border-gray-600 text-on-surface sortable-item"
+            >
+              <!-- 拖拽手柄 -->
+              <div class="drag-handle cursor-move p-0.5 rounded hover:bg-container-tertiary transition-colors">
+                <div class="i-carbon-drag-horizontal w-3 h-3 text-on-surface-secondary" />
               </div>
-              <div v-if="getConditionalDescription(prompt)" class="text-xs text-primary-600 dark:text-primary-400 opacity-50 dark:opacity-60 mt-0.5 truncate leading-tight" :title="getConditionalDescription(prompt)">
-                {{ getConditionalDescription(prompt) }}
+
+              <!-- 按钮内容 -->
+              <div
+                class="inline-flex items-center cursor-pointer"
+                @click="handlePromptClick(prompt)"
+              >
+                <span>{{ prompt.name }}</span>
               </div>
             </div>
-            <n-switch
-              :value="prompt.current_state ?? false"
-              size="small"
-              @update:value="(value: boolean) => handleConditionalToggle(prompt.id, value)"
-            />
           </div>
         </div>
-      </div>
 
-      <!-- 图片提示区域 -->
-      <div v-if="uploadedImages.length === 0" class="text-center">
-        <div class="text-xs text-on-surface-secondary">
-          💡 提示：可以在输入框中粘贴图片 ({{ pasteShortcut }})
+        <!-- 上下文追加区域 -->
+        <div v-if="customPromptEnabled && conditionalPrompts.length > 0" class="space-y-2" data-guide="context-append">
+          <div class="text-xs text-on-surface-secondary flex items-center gap-2">
+            <div class="i-carbon-settings-adjust w-3 h-3 text-primary-500" />
+            <span>上下文追加:</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              v-for="prompt in conditionalPrompts"
+              :key="prompt.id"
+              class="flex items-center justify-between p-2 bg-container-secondary rounded border border-gray-600 hover:bg-container-tertiary transition-colors text-xs"
+            >
+              <div class="flex-1 min-w-0 mr-2">
+                <div class="text-xs text-on-surface truncate font-medium" :title="prompt.condition_text || prompt.name">
+                  {{ prompt.condition_text || prompt.name }}
+                </div>
+                <div v-if="getConditionalDescription(prompt)" class="text-xs text-primary-600 dark:text-primary-400 opacity-50 dark:opacity-60 mt-0.5 truncate leading-tight" :title="getConditionalDescription(prompt)">
+                  {{ getConditionalDescription(prompt) }}
+                </div>
+              </div>
+              <n-switch
+                :value="prompt.current_state ?? false"
+                size="small"
+                @update:value="(value: boolean) => handleConditionalToggle(prompt.id, value)"
+              />
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- 文本输入框 -->
-      <n-input
-        ref="textareaRef"
-        v-model:value="userInput"
-        type="textarea"
-        size="small"
-        :placeholder="hasOptions ? `您可以在这里添加补充说明... (支持粘贴图片 ${pasteShortcut})` : `请输入您的回复... (支持粘贴图片 ${pasteShortcut})`"
-        :disabled="submitting"
-        :autosize="{ minRows: 3, maxRows: 6 }"
-        data-guide="popup-input"
-        @paste="handleImagePaste"
-      />
+        <!-- 图片提示区域 -->
+        <div v-if="uploadedImages.length === 0" class="text-center">
+          <div class="text-xs text-on-surface-secondary">
+            💡 提示：可以在输入框中粘贴图片 ({{ pasteShortcut }})
+          </div>
+        </div>
+
+        <!-- 文本输入框 -->
+        <n-input
+          ref="textareaRef"
+          v-model:value="userInput"
+          type="textarea"
+          size="small"
+          :placeholder="hasOptions ? `您可以在这里添加补充说明... (支持粘贴图片 ${pasteShortcut})` : `请输入您的回复... (支持粘贴图片 ${pasteShortcut})`"
+          :disabled="submitting"
+          :autosize="isSplitLayout ? { minRows: 6, maxRows: 12 } : { minRows: 3, maxRows: 6 }"
+          data-guide="popup-input"
+          @paste="handleImagePaste"
+        />
+      </div>
     </div>
 
     <!-- 插入模式选择对话框 -->

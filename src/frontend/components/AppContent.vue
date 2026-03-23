@@ -25,6 +25,7 @@ interface AppConfig {
     enabled: boolean
     prompt: string
   }
+  popupLayoutMode?: string
 }
 
 interface Props {
@@ -45,6 +46,7 @@ interface Emits {
   stopAudio: []
   testAudioError: [error: any]
   updateWindowSize: [size: { width: number, height: number, fixed: boolean }]
+  updatePopupLayoutMode: [layoutMode: string]
   updateReplyConfig: [config: { enable_continue_reply?: boolean, continue_prompt?: string }]
   messageReady: [message: any]
   configReloaded: []
@@ -121,7 +123,7 @@ onUnmounted(() => {
 
       <!-- 设置界面 -->
       <div
-        v-if="showPopupSettings"
+        v-show="showPopupSettings"
         class="flex-1 overflow-y-auto scrollbar-thin"
       >
         <LayoutWrapper
@@ -134,12 +136,13 @@ onUnmounted(() => {
           @stop-audio="$emit('stopAudio')"
           @test-audio-error="$emit('testAudioError', $event)"
           @update-window-size="$emit('updateWindowSize', $event)"
+          @update-popup-layout-mode="$emit('updatePopupLayoutMode', $event)"
         />
       </div>
 
       <!-- 弹窗内容 -->
       <McpPopup
-        v-else
+        v-show="!showPopupSettings"
         :request="props.mcpRequest"
         :app-config="props.appConfig"
         @response="$emit('mcpResponse', $event)"
@@ -238,6 +241,7 @@ onUnmounted(() => {
       @stop-audio="$emit('stopAudio')"
       @test-audio-error="$emit('testAudioError', $event)"
       @update-window-size="$emit('updateWindowSize', $event)"
+      @update-popup-layout-mode="$emit('updatePopupLayoutMode', $event)"
       @config-reloaded="$emit('configReloaded')"
     />
 

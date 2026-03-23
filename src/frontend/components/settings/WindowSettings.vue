@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps({
   alwaysOnTop: {
@@ -20,9 +20,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  popupLayoutMode: {
+    type: String,
+    default: 'split',
+  },
 })
 
-const emit = defineEmits(['toggleAlwaysOnTop', 'updateWindowSize'])
+const emit = defineEmits(['toggleAlwaysOnTop', 'updateWindowSize', 'updatePopupLayoutMode'])
 
 // 窗口设置状态 - 完全依赖后端
 const localFixed = ref(props.fixedWindowSize)
@@ -32,6 +36,21 @@ const localHeight = ref(props.windowHeight)
 // 实时窗口大小
 const currentWidth = ref(0)
 const currentHeight = ref(0)
+const popupLayoutOptions = [
+  {
+    value: 'split',
+    label: '横向分栏',
+    description: '上方展示输出，下方左右分栏放置选项和输入框',
+  },
+  {
+    value: 'vertical',
+    label: '竖向堆叠',
+    description: '输出、选项和输入框按从上到下的顺序排列',
+  },
+]
+const currentPopupLayoutLabel = computed(() =>
+  props.popupLayoutMode === 'vertical' ? '竖向堆叠' : '横向分栏',
+)
 
 // 窗口大小变化监听器
 let windowResizeUnlisten: (() => void) | null = null
@@ -410,6 +429,54 @@ onUnmounted(() => {
             <div class="text-xs opacity-50 text-gray-500 dark:text-gray-500">
               尺寸限制：宽度 {{ windowConstraints.min_width }}-{{ windowConstraints.max_width }}px，高度 {{ windowConstraints.min_height }}-{{ windowConstraints.max_height }}px
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗布局设置 -->
+    <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-start">
+        <div class="w-1.5 h-1.5 bg-success rounded-full mr-3 mt-2 flex-shrink-0" />
+        <div class="flex-1">
+          <div class="text-sm font-medium mb-3 leading-relaxed">
+            弹窗布局
+          </div>
+
+          <div class="space-y-3">
+            <div
+              v-for="layout in popupLayoutOptions"
+              :key="layout.value"
+              class="p-3 rounded-lg border cursor-pointer transition-all"
+              :class="props.popupLayoutMode === layout.value ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm' : 'border-gray-300 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-gray-100'"
+              @click="emit('updatePopupLayoutMode', layout.value)"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div
+                    class="w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center"
+                    :class="props.popupLayoutMode === layout.value ? 'border-primary-500' : 'border-gray-400 dark:border-gray-500'"
+                  >
+                    <div
+                      v-if="props.popupLayoutMode === layout.value"
+                      class="w-2 h-2 bg-primary-500 rounded-full"
+                    />
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium mb-1">
+                      {{ layout.label }}
+                    </div>
+                    <div class="text-xs opacity-60">
+                      {{ layout.description }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 text-xs opacity-60 text-gray-600 dark:text-gray-400">
+            当前弹窗布局：{{ currentPopupLayoutLabel }}
           </div>
         </div>
       </div>

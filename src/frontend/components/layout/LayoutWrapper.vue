@@ -17,6 +17,7 @@ interface AppConfig {
     enabled: boolean
     prompt: string
   }
+  popupLayoutMode?: string
 }
 
 interface Props {
@@ -32,6 +33,7 @@ interface Emits {
   stopAudio: []
   testAudioError: [error: any]
   updateWindowSize: [size: { width: number, height: number, fixed: boolean }]
+  updatePopupLayoutMode: [layoutMode: string]
   configReloaded: []
 }
 
@@ -48,6 +50,7 @@ defineEmits<Emits>()
     :window-width="appConfig.window.width"
     :window-height="appConfig.window.height"
     :fixed-window-size="appConfig.window.fixed"
+    :popup-layout-mode="appConfig.popupLayoutMode"
     @theme-change="$emit('themeChange', $event)"
     @toggle-always-on-top="$emit('toggleAlwaysOnTop')"
     @toggle-audio-notification="$emit('toggleAudioNotification')"
@@ -56,6 +59,7 @@ defineEmits<Emits>()
     @stop-audio="$emit('stopAudio')"
     @test-audio-error="$emit('testAudioError', $event)"
     @update-window-size="$emit('updateWindowSize', $event)"
+    @update-popup-layout-mode="$emit('updatePopupLayoutMode', $event)"
     @config-reloaded="$emit('configReloaded')"
   />
 </template>
