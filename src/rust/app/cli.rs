@@ -70,16 +70,16 @@ fn handle_mcp_request(request_file: &str) -> Result<()> {
 
 /// 显示帮助信息
 fn print_help() {
-    println!("寸止 - 智能代码审查工具");
+    println!("续言 - 智能代码审查工具");
     println!();
     println!("用法:");
-    println!("  等一下                    启动设置界面");
-    println!("  等一下 --mcp-request <文件>  处理 MCP 请求");
-    println!("  等一下 --help             显示此帮助信息");
-    println!("  等一下 --version          显示版本信息");
+    println!("  续言设置                    启动设置界面");
+    println!("  续言设置 --mcp-request <文件>  处理 MCP 请求");
+    println!("  续言设置 --help             显示此帮助信息");
+    println!("  续言设置 --version          显示版本信息");
 }
 
 /// 显示版本信息
 fn print_version() {
-    println!("寸止 v{}", env!("CARGO_PKG_VERSION"));
+    println!("续言 v{}", env!("CARGO_PKG_VERSION"));
 }

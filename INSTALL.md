@@ -1,62 +1,65 @@
-# 寸止 MCP 工具安装指南
+# 续言 安装指南
 
 ## 快速安装
 
-### 方式一：使用安装脚本（推荐）
+### 方式一：下载预编译版本
 
-```bash
-# 克隆仓库
-git clone https://github.com/imhuso/cunzhi.git
-cd cunzhi
+从 [Releases](https://github.com/PandaK404/dengdeng/releases) 页面下载对应平台的预编译版本：
 
-# 运行安装脚本
-chmod +x install.sh
-./install.sh
-```
+- **Linux**: `xuyan-cli-v*-linux-x86_64.tar.gz`
+- **macOS (Intel)**: `xuyan-cli-v*-macos-x86_64.tar.gz`
+- **macOS (Apple Silicon)**: `xuyan-cli-v*-macos-aarch64.tar.gz`
+- **Windows**: `xuyan-cli-v*-windows-x86_64.zip`
 
-### 方式二：下载预编译版本
-
-从 [Releases](https://github.com/imhuso/cunzhi/releases) 页面下载对应平台的预编译版本：
-
-- **Linux**: `cunzhi-linux-x86_64.tar.gz`
-- **macOS**: `cunzhi-macos-universal.tar.gz`
-- **Windows**: `cunzhi-windows-x86_64.zip`
-
-#### 安装步骤：
+安装步骤：
 
 1. 下载对应平台的压缩包
 2. 解压到任意目录
-3. 将解压目录添加到 PATH 环境变量
+3. 将解压后的 `续言` 和 `续言设置` 添加到 `PATH`
 
+Linux/macOS 示例：
 ```bash
-# Linux/macOS 示例
-tar -xzf cunzhi-linux-x86_64.tar.gz
-sudo cp 等一下 寸止 /usr/local/bin/
+tar -xzf xuyan-cli-v0.4.0-linux-x86_64.tar.gz
+sudo cp 续言 续言设置 /usr/local/bin/
 ```
 
-```powershell
-# Windows 示例
-# 解压 zip 文件到 C:\cunzhi
-# 将 C:\cunzhi 添加到系统 PATH
+### 方式二：从源码构建
+
+```bash
+git clone https://github.com/PandaK404/dengdeng.git
+cd dengdeng
+pnpm install
+pnpm build
+cargo build --release
+```
+
+构建完成后，二进制位于：
+
+- `target/release/续言设置`
+- `target/release/续言`
+
+可按需安装到本地：
+
+```bash
+cp target/release/续言 target/release/续言设置 ~/.local/bin/
 ```
 
 ## 验证安装
 
 ```bash
-# 检查工具是否正确安装
-寸止 --help
-等一下 --help
+续言 --help
+续言设置 --help
 ```
 
 ## MCP 客户端配置
 
-将以下配置添加到您的 MCP 客户端配置文件中：
+将以下配置添加到 MCP 客户端配置文件：
 
 ```json
 {
   "mcpServers": {
-    "寸止": {
-      "command": "寸止"
+    "续言": {
+      "command": "续言"
     }
   }
 }
@@ -65,66 +68,29 @@ sudo cp 等一下 寸止 /usr/local/bin/
 ## 使用方法
 
 ### MCP 服务器模式
+
 ```bash
-寸止  # 启动 MCP 服务器
+续言
 ```
 
 ### 弹窗界面模式
+
 ```bash
-等一下                          # 启动设置界面
-等一下 --mcp-request file       # MCP 弹窗模式
+续言设置
+续言设置 --mcp-request file
 ```
 
 ## 工具说明
 
-- **寸止**: MCP 服务器，提供记忆管理和智能交互功能
-- **等一下**: 弹窗界面，用于用户交互和设置
+- `续言`: MCP 服务器，提供交互、记忆和代码搜索能力
+- `续言设置`: 弹窗界面与设置界面
+
+## 发布说明
+
+- 如果你继续维护自动更新、Homebrew 或发布资产，请确保 release 产物前缀与仓库配置保持一致：`xuyan-cli-*`。
 
 ## 系统要求
 
-- **Linux**: x86_64 架构
-- **macOS**: 10.15+ (支持 Intel 和 Apple Silicon)
+- **Linux**: x86_64
+- **macOS**: 10.15+
 - **Windows**: Windows 10+ x86_64
-
-## 故障排除
-
-### 权限问题
-```bash
-# Linux/macOS
-chmod +x 等一下 寸止
-```
-
-### PATH 问题
-确保安装目录已添加到 PATH 环境变量中。
-
-### 依赖问题
-两个 CLI 工具必须在同一目录下才能正常工作。
-
-## 开发者安装
-
-如果您想从源码构建：
-
-```bash
-# 安装依赖
-cargo --version  # 需要 Rust 1.70+
-pnpm --version   # 需要 pnpm
-
-# 构建
-pnpm install
-pnpm build
-cargo build --release
-
-# 安装
-cp target/release/等一下 target/release/寸止 ~/.local/bin/
-```
-
-## 更新
-
-### 使用预编译版本
-重新下载最新版本并替换旧文件。
-
-### 使用源码
-```bash
-git pull
-./install.sh
-```

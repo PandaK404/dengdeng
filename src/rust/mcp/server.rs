@@ -61,7 +61,7 @@ impl ServerHandler for ZhiServer {
             protocol_version: ProtocolVersion::V_2024_11_05,
             capabilities: ServerCapabilities::builder().enable_tools().build(),
             server_info: Implementation {
-                name: "Zhi-mcp".to_string(),
+                name: "Xuyan-mcp".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
             instructions: Some("Zhi 智能代码审查工具，支持交互式对话和记忆管理".to_string()),
@@ -86,7 +86,7 @@ impl ServerHandler for ZhiServer {
 
         let mut tools = Vec::new();
 
-        // 寸止工具始终可用（必需工具）
+        // 续言工具始终可用（必需工具）
         let zhi_schema = serde_json::json!({
             "type": "object",
             "properties": {
@@ -181,7 +181,7 @@ impl ServerHandler for ZhiServer {
                 let zhi_request: ZhiRequest = serde_json::from_value(arguments_value)
                     .map_err(|e| McpError::invalid_params(format!("参数解析失败: {}", e), None))?;
 
-                // 调用寸止工具
+                // 调用续言工具
                 InteractionTool::zhi(zhi_request).await
             }
             "ji" => {

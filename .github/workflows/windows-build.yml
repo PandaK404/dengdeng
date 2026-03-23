@@ -1,0 +1,58 @@
+name: Build Windows CLI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0" --locked
+
+      - name: Build with Tauri (no bundle)
+        run: cargo tauri build --no-bundle
+
+      - name: Package Windows artifacts
+        id: package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path cli-package -Force | Out-Null
+          Copy-Item "target/release/续言设置.exe" "cli-package/"
+          Copy-Item "target/release/续言.exe" "cli-package/"
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $packageName = "xuyan-cli-main-$shortSha-windows-x86_64.zip"
+          Compress-Archive -Path "cli-package/*" -DestinationPath $packageName -Force
+          "package_name=$packageName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xuyan-cli-windows-x86_64
+          path: ${{ steps.package.outputs.package_name }}
+          if-no-files-found: error

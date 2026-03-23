@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 寸止弹窗测试脚本
+# 续言弹窗测试脚本
 # 使用 target/release 中的 CLI 工具测试弹窗功能
 
 set -e
@@ -20,7 +20,7 @@ BUILD_TYPE="release"
 CLI_TYPE="local"  # local 或 global
 CLI_PATH="$PROJECT_ROOT/target/$BUILD_TYPE"
 
-echo -e "${BLUE}🎯 寸止弹窗测试脚本${NC}"
+echo -e "${BLUE}🎯 续言弹窗测试脚本${NC}"
 echo -e "${BLUE}================================${NC}"
 
 # 选择CLI类型
@@ -91,26 +91,26 @@ select_build_type() {
 check_global_cli() {
     echo -e "${YELLOW}🔍 检查全局CLI工具...${NC}"
 
-    local cunzhi_found=false
+    local xuyan_found=false
     local dengxiaxia_found=false
 
-    # 检查寸止
-    if command -v 寸止 &> /dev/null; then
-        echo -e "${GREEN}✅ 找到全局 寸止 CLI: $(which 寸止)${NC}"
-        cunzhi_found=true
+    # 检查续言
+    if command -v 续言 &> /dev/null; then
+        echo -e "${GREEN}✅ 找到全局 续言 CLI: $(which 续言)${NC}"
+        xuyan_found=true
     else
-        echo -e "${RED}❌ 未找到全局 寸止 CLI${NC}"
+        echo -e "${RED}❌ 未找到全局 续言 CLI${NC}"
     fi
 
-    # 检查等一下
-    if command -v 等一下 &> /dev/null; then
-        echo -e "${GREEN}✅ 找到全局 等一下 CLI: $(which 等一下)${NC}"
+    # 检查续言设置
+    if command -v 续言设置 &> /dev/null; then
+        echo -e "${GREEN}✅ 找到全局 续言设置 CLI: $(which 续言设置)${NC}"
         dengxiaxia_found=true
     else
-        echo -e "${RED}❌ 未找到全局 等一下 CLI${NC}"
+        echo -e "${RED}❌ 未找到全局 续言设置 CLI${NC}"
     fi
 
-    if [[ "$cunzhi_found" == false || "$dengxiaxia_found" == false ]]; then
+    if [[ "$xuyan_found" == false || "$dengxiaxia_found" == false ]]; then
         echo -e "${YELLOW}💡 全局CLI工具未完全安装，安装方法:${NC}"
         echo -e "${BLUE}   cargo install --path . --bins${NC}"
         echo -e "${YELLOW}   或者选择使用本地编译版本${NC}"
@@ -188,8 +188,8 @@ check_cli_tools() {
 
     echo -e "${YELLOW}📋 检查本地CLI工具 (${BUILD_TYPE})...${NC}"
 
-    if [[ ! -f "$CLI_PATH/寸止" ]]; then
-        echo -e "${RED}❌ 未找到 寸止 CLI工具${NC}"
+    if [[ ! -f "$CLI_PATH/续言" ]]; then
+        echo -e "${RED}❌ 未找到 续言 CLI工具${NC}"
         if [[ "$BUILD_TYPE" == "release" ]]; then
             echo -e "${YELLOW}💡 请先编译项目: cargo build --release${NC}"
         else
@@ -206,8 +206,8 @@ check_cli_tools() {
         fi
     fi
 
-    if [[ ! -f "$CLI_PATH/等一下" ]]; then
-        echo -e "${RED}❌ 未找到 等一下 CLI工具${NC}"
+    if [[ ! -f "$CLI_PATH/续言设置" ]]; then
+        echo -e "${RED}❌ 未找到 续言设置 CLI工具${NC}"
         if [[ "$BUILD_TYPE" == "release" ]]; then
             echo -e "${YELLOW}💡 请先编译项目: cargo build --release${NC}"
         else
@@ -225,20 +225,20 @@ check_cli_tools() {
     fi
 
     # 检查执行权限
-    if [[ ! -x "$CLI_PATH/寸止" ]]; then
-        echo -e "${YELLOW}⚠️  寸止 CLI工具没有执行权限，正在添加...${NC}"
-        chmod +x "$CLI_PATH/寸止"
+    if [[ ! -x "$CLI_PATH/续言" ]]; then
+        echo -e "${YELLOW}⚠️  续言 CLI工具没有执行权限，正在添加...${NC}"
+        chmod +x "$CLI_PATH/续言"
     fi
 
-    if [[ ! -x "$CLI_PATH/等一下" ]]; then
-        echo -e "${YELLOW}⚠️  等一下 CLI工具没有执行权限，正在添加...${NC}"
-        chmod +x "$CLI_PATH/等一下"
+    if [[ ! -x "$CLI_PATH/续言设置" ]]; then
+        echo -e "${YELLOW}⚠️  续言设置 CLI工具没有执行权限，正在添加...${NC}"
+        chmod +x "$CLI_PATH/续言设置"
     fi
 
     echo -e "${GREEN}✅ 本地CLI工具检查完成 (${BUILD_TYPE})${NC}"
     echo -e "   构建类型: ${BUILD_TYPE}"
-    echo -e "   寸止: $CLI_PATH/寸止"
-    echo -e "   等一下: $CLI_PATH/等一下"
+    echo -e "   续言: $CLI_PATH/续言"
+    echo -e "   续言设置: $CLI_PATH/续言设置"
 }
 
 # 检查测试JSON文件
@@ -310,7 +310,7 @@ test_simple_popup() {
     echo ""
 
     # 启动弹窗
-    local cli_cmd=$(get_cli_command "等一下")
+    local cli_cmd=$(get_cli_command "续言设置")
     echo -e "${GREEN}🎯 启动弹窗...${NC}"
     echo -e "${BLUE}执行命令: $cli_cmd --mcp-request test_simple_popup.json${NC}"
     if $cli_cmd --mcp-request "$PROJECT_ROOT/test_simple_popup.json"; then
@@ -332,7 +332,7 @@ test_markdown_popup() {
     echo ""
 
     # 启动弹窗
-    local cli_cmd=$(get_cli_command "等一下")
+    local cli_cmd=$(get_cli_command "续言设置")
     echo -e "${GREEN}🎯 启动弹窗...${NC}"
     echo -e "${BLUE}执行命令: $cli_cmd --mcp-request test_markdown_popup.json${NC}"
     if $cli_cmd --mcp-request "$PROJECT_ROOT/test_markdown_popup.json"; then
@@ -372,7 +372,7 @@ EOF
     echo ""
     
     # 启动弹窗
-    local cli_cmd=$(get_cli_command "等一下")
+    local cli_cmd=$(get_cli_command "续言设置")
     echo -e "${GREEN}🎯 启动自定义弹窗...${NC}"
     echo -e "${BLUE}执行命令: $cli_cmd --mcp-request $TEMP_FILE${NC}"
     if $cli_cmd --mcp-request "$TEMP_FILE"; then
@@ -415,25 +415,25 @@ show_cli_help() {
     echo -e "${YELLOW}📖 CLI工具帮助信息:${NC}"
     echo ""
 
-    local cunzhi_cmd=$(get_cli_command "寸止")
-    local dengxiaxia_cmd=$(get_cli_command "等一下")
+    local xuyan_cmd=$(get_cli_command "续言")
+    local dengxiaxia_cmd=$(get_cli_command "续言设置")
 
-    echo -e "${BLUE}寸止 CLI:${NC}"
-    echo -e "${BLUE}命令: $cunzhi_cmd${NC}"
-    if $cunzhi_cmd --help 2>/dev/null; then
+    echo -e "${BLUE}续言 CLI:${NC}"
+    echo -e "${BLUE}命令: $xuyan_cmd${NC}"
+    if $xuyan_cmd --help 2>/dev/null; then
         echo -e "${GREEN}✅ 帮助信息显示完成${NC}"
     else
-        echo -e "${YELLOW}⚠️  寸止 CLI 无帮助信息或不支持 --help 参数${NC}"
-        echo -e "${BLUE}尝试直接运行:${NC} $cunzhi_cmd"
+        echo -e "${YELLOW}⚠️  续言 CLI 无帮助信息或不支持 --help 参数${NC}"
+        echo -e "${BLUE}尝试直接运行:${NC} $xuyan_cmd"
     fi
     echo ""
 
-    echo -e "${BLUE}等一下 CLI:${NC}"
+    echo -e "${BLUE}续言设置 CLI:${NC}"
     echo -e "${BLUE}命令: $dengxiaxia_cmd${NC}"
     if $dengxiaxia_cmd --help 2>/dev/null; then
         echo -e "${GREEN}✅ 帮助信息显示完成${NC}"
     else
-        echo -e "${YELLOW}⚠️  等一下 CLI 无帮助信息或不支持 --help 参数${NC}"
+        echo -e "${YELLOW}⚠️  续言设置 CLI 无帮助信息或不支持 --help 参数${NC}"
         echo -e "${BLUE}尝试直接运行:${NC} $dengxiaxia_cmd"
         echo -e "${BLUE}MCP请求参数:${NC} $dengxiaxia_cmd --mcp-request <json_file>"
     fi

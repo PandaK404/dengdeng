@@ -29,8 +29,8 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateInfo, String> {
     log::info!("📡 发送 GitHub API 请求");
     
     let response = client
-        .get("https://api.github.com/repos/imhuso/cunzhi/releases/latest")
-        .header("User-Agent", "cunzhi-app/1.0")
+        .get("https://api.github.com/repos/PandaK404/dengdeng/releases/latest")
+        .header("User-Agent", "xuyan-app/1.0")
         .header("Accept", "application/vnd.github.v3+json")
         .timeout(std::time::Duration::from_secs(30))
         .send()
@@ -264,7 +264,7 @@ async fn download_and_install_update_impl(app: &AppHandle, update_info: &UpdateI
     log::info!("📥 开始下载文件: {}", update_info.download_url);
 
     // 创建临时目录
-    let temp_dir = std::env::temp_dir().join("cunzhi_update");
+    let temp_dir = std::env::temp_dir().join("xuyan_update");
     fs::create_dir_all(&temp_dir)
         .map_err(|e| format!("创建临时目录失败: {}", e))?;
 
@@ -457,7 +457,7 @@ async fn install_from_archive(file_path: &PathBuf) -> Result<(), String> {
     log::info!("📍 当前可执行文件路径: {}", current_exe.display());
 
     // 创建临时解压目录
-    let temp_dir = std::env::temp_dir().join("cunzhi_extract");
+    let temp_dir = std::env::temp_dir().join("xuyan_extract");
     if temp_dir.exists() {
         fs::remove_dir_all(&temp_dir)
             .map_err(|e| format!("清理临时目录失败: {}", e))?;
@@ -481,7 +481,11 @@ async fn install_from_archive(file_path: &PathBuf) -> Result<(), String> {
     }
 
     // 查找新的可执行文件
-    let new_exe = find_executable_in_dir(&temp_dir)?;
+    let current_file_name = current_exe
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("");
+    let new_exe = find_executable_in_dir(&temp_dir, current_file_name)?;
     log::info!("🔍 找到新的可执行文件: {}", new_exe.display());
 
     // 替换当前可执行文件
@@ -548,7 +552,7 @@ fn extract_zip(archive_path: &PathBuf, extract_to: &PathBuf) -> Result<(), Strin
 }
 
 /// 在目录中查找可执行文件
-fn find_executable_in_dir(dir: &PathBuf) -> Result<PathBuf, String> {
+fn find_executable_in_dir(dir: &PathBuf, current_file_name: &str) -> Result<PathBuf, String> {
     log::info!("🔍 在目录中查找可执行文件: {}", dir.display());
 
     // 递归查找目录中的所有文件
@@ -574,15 +578,27 @@ fn find_executable_in_dir(dir: &PathBuf) -> Result<PathBuf, String> {
 
     log::info!("📋 解压后找到 {} 个文件", files.len());
 
+    if !current_file_name.is_empty() {
+        for file in &files {
+            if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
+                if file_name == current_file_name {
+                    log::info!("✅ 找到与当前进程同名的可执行文件: {}", file_name);
+                    return Ok(file.clone());
+                }
+            }
+        }
+    }
+
+    let preferred_names = ["续言设置", "续言", "xuyan", "续言设置.exe", "续言.exe", "xuyan.exe"];
+
     // 查找可执行文件
     for file in &files {
         if let Some(file_name) = file.file_name().and_then(|n| n.to_str()) {
             log::info!("📄 检查文件: {} (路径: {})", file_name, file.display());
 
-            // 查找名为 "等一下" 或 "cunzhi" 的可执行文件
-            if file_name == "等一下" || file_name == "cunzhi" ||
-               file_name == "等一下.exe" || file_name == "cunzhi.exe" ||
-               file_name.starts_with("cunzhi") && !file_name.ends_with(".tar.gz") {
+            if preferred_names.contains(&file_name)
+                || (file_name.starts_with("xuyan") && !file_name.ends_with(".tar.gz"))
+            {
                 log::info!("✅ 找到目标可执行文件: {}", file_name);
                 return Ok(file.clone());
             }

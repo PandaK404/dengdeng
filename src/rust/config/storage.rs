@@ -40,7 +40,6 @@ pub async fn save_config(state: &State<'_, AppState>, app: &AppHandle) -> Result
 /// Tauri应用专用的配置加载函数
 pub async fn load_config(state: &State<'_, AppState>, app: &AppHandle) -> Result<()> {
     let config_path = get_config_path(app)?;
-
     if config_path.exists() {
         let config_json = fs::read_to_string(&config_path)?;
         let mut config: AppConfig = serde_json::from_str(&config_json)?;
@@ -122,7 +121,6 @@ pub async fn load_config_and_apply_window_settings(
 /// 独立加载配置文件（用于MCP服务器等独立进程）
 pub fn load_standalone_config() -> Result<AppConfig> {
     let config_path = get_standalone_config_path()?;
-
     if config_path.exists() {
         let config_json = fs::read_to_string(config_path)?;
         let mut config: AppConfig = serde_json::from_str(&config_json)?;
@@ -148,7 +146,7 @@ fn get_standalone_config_path() -> Result<PathBuf> {
     // 使用标准的配置目录
     let config_dir = dirs::config_dir()
         .ok_or_else(|| anyhow::anyhow!("无法获取配置目录"))?
-        .join("cunzhi");
+        .join("xuyan");
 
     // 确保目录存在
     fs::create_dir_all(&config_dir)?;

@@ -112,24 +112,24 @@ jobs:
 
           # 复制二进制文件
           if [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
-            cp "$TARGET_DIR/等一下.exe" cli-package/
-            cp "$TARGET_DIR/寸止.exe" cli-package/
+            cp "$TARGET_DIR/续言设置.exe" cli-package/
+            cp "$TARGET_DIR/续言.exe" cli-package/
             cd cli-package
-            7z a ../cunzhi-cli-${TAG_NAME}-${{ matrix.name }}.zip *
+            7z a ../xuyan-cli-${TAG_NAME}-${{ matrix.name }}.zip *
           else
-            cp "$TARGET_DIR/等一下" cli-package/
-            cp "$TARGET_DIR/寸止" cli-package/
+            cp "$TARGET_DIR/续言设置" cli-package/
+            cp "$TARGET_DIR/续言" cli-package/
             cd cli-package
-            tar -czf ../cunzhi-cli-${TAG_NAME}-${{ matrix.name }}.tar.gz *
+            tar -czf ../xuyan-cli-${TAG_NAME}-${{ matrix.name }}.tar.gz *
           fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: cunzhi-cli-${{ matrix.name }}
+          name: xuyan-cli-${{ matrix.name }}
           path: |
-            cunzhi-cli-*.tar.gz
-            cunzhi-cli-*.zip
+            xuyan-cli-*.tar.gz
+            xuyan-cli-*.zip
           if-no-files-found: ignore
 
   release:
@@ -192,7 +192,7 @@ jobs:
         run: |
           # 从 GitHub API 获取最新的 release 版本
           echo "Fetching latest release from GitHub API..."
-          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/imhuso/cunzhi/releases/latest" | jq -r '.tag_name // empty' 2>/dev/null || echo "")
+          LATEST_RELEASE=$(curl -s "https://api.github.com/repos/PandaK404/dengdeng/releases/latest" | jq -r '.tag_name // empty' 2>/dev/null || echo "")
 
           if [ -z "$LATEST_RELEASE" ] || [ "$LATEST_RELEASE" = "null" ]; then
             echo "GitHub API failed or no previous release found, falling back to git tags"
@@ -220,7 +220,7 @@ jobs:
 
             # 添加 Full Changelog 链接
             echo "" >> changelog.md
-            echo "**Full Changelog**: [$PREVIOUS_TAG...${{ github.ref_name }}](https://github.com/imhuso/cunzhi/compare/$PREVIOUS_TAG...${{ github.ref_name }})" >> changelog.md
+            echo "**Full Changelog**: [$PREVIOUS_TAG...${{ github.ref_name }}](https://github.com/PandaK404/dengdeng/compare/$PREVIOUS_TAG...${{ github.ref_name }})" >> changelog.md
           fi
 
           # 生成发布标题
@@ -249,8 +249,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/*/cunzhi-cli-*.tar.gz
-            artifacts/*/cunzhi-cli-*.zip
+            artifacts/*/xuyan-cli-*.tar.gz
+            artifacts/*/xuyan-cli-*.zip
           draft: false
           prerelease: false
           generate_release_notes: false
