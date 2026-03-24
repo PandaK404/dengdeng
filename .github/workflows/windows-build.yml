@@ -17,13 +17,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: lts/*
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.1
-          run_install: false
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -32,16 +29,13 @@ jobs:
         uses: swatinem/rust-cache@v2
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
-      - name: Build frontend assets
-        shell: pwsh
-        env:
-          TAURI_PLATFORM: windows
-        run: pnpm build
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0" --locked
 
-      - name: Build Windows binaries
-        run: cargo build --release --bin 续言设置 --bin 续言
+      - name: Build with Tauri (no bundle)
+        run: cargo tauri build --no-bundle
 
       - name: Package Windows artifacts
         id: package
