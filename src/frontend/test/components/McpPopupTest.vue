@@ -27,6 +27,10 @@ const appConfig = ref({
   reply: {
     enabled: true,
     prompt: '请按照最佳实践继续',
+    timeoutAutoSubmitEnabled: true,
+    timeoutAutoSubmitSeconds: 400,
+    timeoutAutoSubmitAction: 'retry_xuyan' as const,
+    timeoutAutoSubmitCustomInput: '',
   },
   popupLayoutMode: 'split',
 })

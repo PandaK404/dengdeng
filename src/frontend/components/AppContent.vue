@@ -24,6 +24,10 @@ interface AppConfig {
   reply: {
     enabled: boolean
     prompt: string
+    timeoutAutoSubmitEnabled: boolean
+    timeoutAutoSubmitSeconds: number
+    timeoutAutoSubmitAction: 'retry_xuyan' | 'custom_input'
+    timeoutAutoSubmitCustomInput: string
   }
   popupLayoutMode?: string
 }
@@ -47,7 +51,14 @@ interface Emits {
   testAudioError: [error: any]
   updateWindowSize: [size: { width: number, height: number, fixed: boolean }]
   updatePopupLayoutMode: [layoutMode: string]
-  updateReplyConfig: [config: { enable_continue_reply?: boolean, continue_prompt?: string }]
+  updateReplyConfig: [config: {
+    enable_continue_reply?: boolean
+    continue_prompt?: string
+    enable_timeout_auto_submit?: boolean
+    timeout_auto_submit_seconds?: number
+    timeout_auto_submit_action?: 'retry_xuyan' | 'custom_input'
+    timeout_auto_submit_custom_input?: string
+  }]
   messageReady: [message: any]
   configReloaded: []
 }

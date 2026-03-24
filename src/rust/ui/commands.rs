@@ -208,6 +208,15 @@ pub async fn set_reply_config(
     state: State<'_, AppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    if reply_config.timeout_auto_submit_seconds == 0 {
+        return Err("超时自动提交秒数必须大于 0".to_string());
+    }
+
+    if !["retry_xuyan", "custom_input"].contains(&reply_config.timeout_auto_submit_action.as_str())
+    {
+        return Err("无效的超时自动提交动作，只支持 retry_xuyan、custom_input".to_string());
+    }
+
     {
         let mut config = state
             .config

@@ -34,6 +34,10 @@ export function useAppManager() {
       reply: {
         enabled: settings.continueReplyEnabled.value,
         prompt: settings.continuePrompt.value,
+        timeoutAutoSubmitEnabled: settings.timeoutAutoSubmitEnabled.value,
+        timeoutAutoSubmitSeconds: settings.timeoutAutoSubmitSeconds.value,
+        timeoutAutoSubmitAction: settings.timeoutAutoSubmitAction.value,
+        timeoutAutoSubmitCustomInput: settings.timeoutAutoSubmitCustomInput.value,
       },
       popupLayoutMode: settings.popupLayoutMode.value,
     }

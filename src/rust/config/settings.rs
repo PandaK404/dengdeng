@@ -106,6 +106,14 @@ pub struct ReplyConfig {
     pub auto_continue_threshold: u32, // 字符数阈值
     #[serde(default = "default_continue_prompt")]
     pub continue_prompt: String, // 继续回复的提示词
+    #[serde(default = "default_enable_timeout_auto_submit")]
+    pub enable_timeout_auto_submit: bool, // 是否启用超时自动提交
+    #[serde(default = "default_timeout_auto_submit_seconds")]
+    pub timeout_auto_submit_seconds: u32, // 弹窗打开后的超时秒数
+    #[serde(default = "default_timeout_auto_submit_action")]
+    pub timeout_auto_submit_action: String, // "retry_xuyan" | "custom_input"
+    #[serde(default = "default_timeout_auto_submit_custom_input")]
+    pub timeout_auto_submit_custom_input: String, // 自定义超时提交内容
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -312,6 +320,10 @@ pub fn default_reply_config() -> ReplyConfig {
         enable_continue_reply: mcp::DEFAULT_CONTINUE_REPLY_ENABLED,
         auto_continue_threshold: mcp::DEFAULT_AUTO_CONTINUE_THRESHOLD,
         continue_prompt: mcp::DEFAULT_CONTINUE_PROMPT.to_string(),
+        enable_timeout_auto_submit: mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_ENABLED,
+        timeout_auto_submit_seconds: mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_SECONDS,
+        timeout_auto_submit_action: mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_ACTION.to_string(),
+        timeout_auto_submit_custom_input: mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_CUSTOM_INPUT.to_string(),
     }
 }
 
@@ -347,6 +359,22 @@ pub fn default_continue_prompt() -> String {
     mcp::DEFAULT_CONTINUE_PROMPT.to_string()
 }
 
+pub fn default_enable_timeout_auto_submit() -> bool {
+    mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_ENABLED
+}
+
+pub fn default_timeout_auto_submit_seconds() -> u32 {
+    mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_SECONDS
+}
+
+pub fn default_timeout_auto_submit_action() -> String {
+    mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_ACTION.to_string()
+}
+
+pub fn default_timeout_auto_submit_custom_input() -> String {
+    mcp::DEFAULT_TIMEOUT_AUTO_SUBMIT_CUSTOM_INPUT.to_string()
+}
+
 pub fn default_mcp_tools() -> HashMap<String, bool> {
     let mut tools = HashMap::new();
     tools.insert(mcp::TOOL_XU.to_string(), true); // 续言工具默认启用
@@ -377,6 +405,36 @@ pub fn default_fixed_height() -> f64 {
 
 pub fn default_free_width() -> f64 {
     window::DEFAULT_WIDTH
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{default_reply_config, ReplyConfig};
+
+    #[test]
+    fn default_reply_config_includes_timeout_auto_submit_defaults() {
+        let config = default_reply_config();
+
+        assert!(config.enable_timeout_auto_submit);
+        assert_eq!(config.timeout_auto_submit_seconds, 400);
+        assert_eq!(config.timeout_auto_submit_action, "retry_xuyan");
+        assert_eq!(config.timeout_auto_submit_custom_input, "");
+    }
+
+    #[test]
+    fn reply_config_deserialization_backfills_new_timeout_fields() {
+        let config: ReplyConfig = serde_json::from_value(serde_json::json!({
+            "enable_continue_reply": true,
+            "auto_continue_threshold": 1000,
+            "continue_prompt": "请按照最佳实践继续"
+        }))
+        .unwrap();
+
+        assert!(config.enable_timeout_auto_submit);
+        assert_eq!(config.timeout_auto_submit_seconds, 400);
+        assert_eq!(config.timeout_auto_submit_action, "retry_xuyan");
+        assert_eq!(config.timeout_auto_submit_custom_input, "");
+    }
 }
 
 pub fn default_free_height() -> f64 {

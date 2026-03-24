@@ -24,6 +24,10 @@ interface AppConfig {
   reply: {
     enabled: boolean
     prompt: string
+    timeoutAutoSubmitEnabled: boolean
+    timeoutAutoSubmitSeconds: number
+    timeoutAutoSubmitAction: 'retry_xuyan' | 'custom_input'
+    timeoutAutoSubmitCustomInput: string
   }
   popupLayoutMode?: string
 }
@@ -70,6 +74,12 @@ const inputRef = ref()
 // 继续回复配置
 const continueReplyEnabled = ref(true)
 const continuePrompt = ref('请按照最佳实践继续')
+const timeoutAutoSubmitEnabled = ref(true)
+const timeoutAutoSubmitSeconds = ref(400)
+const timeoutAutoSubmitAction = ref<'retry_xuyan' | 'custom_input'>('retry_xuyan')
+const timeoutAutoSubmitCustomInput = ref('')
+let autoSubmitTimer: ReturnType<typeof window.setTimeout> | null = null
+let requestSequence = 0
 
 // 计算属性
 const isVisible = computed(() => !!props.request)
@@ -96,6 +106,10 @@ async function loadReplyConfig() {
       const replyConfig = config as any
       continueReplyEnabled.value = replyConfig.enable_continue_reply ?? true
       continuePrompt.value = replyConfig.continue_prompt ?? '请按照最佳实践继续'
+      timeoutAutoSubmitEnabled.value = replyConfig.enable_timeout_auto_submit ?? true
+      timeoutAutoSubmitSeconds.value = Math.max(1, Math.floor(replyConfig.timeout_auto_submit_seconds ?? 400))
+      timeoutAutoSubmitAction.value = replyConfig.timeout_auto_submit_action === 'custom_input' ? 'custom_input' : 'retry_xuyan'
+      timeoutAutoSubmitCustomInput.value = replyConfig.timeout_auto_submit_custom_input ?? ''
     }
   }
   catch (error) {
@@ -108,23 +122,69 @@ watch(() => props.appConfig.reply, (newReplyConfig) => {
   if (newReplyConfig) {
     continueReplyEnabled.value = newReplyConfig.enabled
     continuePrompt.value = newReplyConfig.prompt
+    timeoutAutoSubmitEnabled.value = newReplyConfig.timeoutAutoSubmitEnabled
+    timeoutAutoSubmitSeconds.value = Math.max(1, Math.floor(newReplyConfig.timeoutAutoSubmitSeconds))
+    timeoutAutoSubmitAction.value = newReplyConfig.timeoutAutoSubmitAction
+    timeoutAutoSubmitCustomInput.value = newReplyConfig.timeoutAutoSubmitCustomInput
   }
 }, { deep: true, immediate: true })
 
 // Telegram事件监听器
 let telegramUnlisten: (() => void) | null = null
 
-// 监听请求变化
-watch(() => props.request, (newRequest) => {
-  if (newRequest) {
-    resetForm()
-    loading.value = true
-    // 每次显示弹窗时重新加载配置
-    loadReplyConfig()
-    setTimeout(() => {
-      loading.value = false
-    }, 300)
+function clearAutoSubmitTimer() {
+  if (autoSubmitTimer !== null) {
+    window.clearTimeout(autoSubmitTimer)
+    autoSubmitTimer = null
   }
+}
+
+function resolveTimeoutAutoSubmitInput() {
+  if (timeoutAutoSubmitAction.value === 'custom_input') {
+    return timeoutAutoSubmitCustomInput.value.trim() || '重新调用xuyan'
+  }
+
+  return '重新调用xuyan'
+}
+
+function scheduleAutoSubmitTimer() {
+  clearAutoSubmitTimer()
+
+  if (!props.request || !timeoutAutoSubmitEnabled.value)
+    return
+
+  autoSubmitTimer = window.setTimeout(() => {
+    void handleTimeoutAutoSubmit()
+  }, timeoutAutoSubmitSeconds.value * 1000)
+}
+
+// 监听请求变化
+watch(() => props.request, async (newRequest) => {
+  requestSequence += 1
+  const currentSequence = requestSequence
+  clearAutoSubmitTimer()
+
+  if (!newRequest) {
+    resetForm()
+    loading.value = false
+    return
+  }
+
+  resetForm()
+  loading.value = true
+
+  await loadReplyConfig()
+
+  if (currentSequence !== requestSequence || props.request?.id !== newRequest.id)
+    return
+
+  scheduleAutoSubmitTimer()
+
+  window.setTimeout(() => {
+    if (currentSequence === requestSequence) {
+      loading.value = false
+    }
+  }, 300)
 }, { immediate: true })
 
 // 设置Telegram事件监听
@@ -204,6 +264,7 @@ onMounted(() => {
 
 // 组件卸载时清理监听器
 onUnmounted(() => {
+  clearAutoSubmitTimer()
   if (telegramUnlisten) {
     telegramUnlisten()
   }
@@ -227,6 +288,8 @@ function buildResponseMetadata(source: string) {
 }
 
 async function sendResponseAndExit(response: Record<string, any>) {
+  clearAutoSubmitTimer()
+
   if (props.mockMode) {
     await new Promise(resolve => setTimeout(resolve, 1000))
     return
@@ -242,6 +305,7 @@ async function handleSubmit() {
     return
 
   submitting.value = true
+  clearAutoSubmitTimer()
 
   try {
     // 使用新的结构化数据格式
@@ -302,6 +366,7 @@ async function handleContinue() {
     return
 
   submitting.value = true
+  clearAutoSubmitTimer()
 
   try {
     // 使用新的结构化数据格式
@@ -343,6 +408,7 @@ async function handleEnhance() {
     return
 
   submitting.value = true
+  clearAutoSubmitTimer()
 
   try {
     // 构建增强prompt
@@ -378,6 +444,39 @@ Here is my original instruction:
   catch (error) {
     console.error('发送增强请求失败:', error)
     message.error('增强请求失败，请重试')
+  }
+  finally {
+    submitting.value = false
+  }
+}
+
+async function handleTimeoutAutoSubmit() {
+  if (submitting.value || !props.request)
+    return
+
+  submitting.value = true
+  clearAutoSubmitTimer()
+
+  try {
+    const response = {
+      user_input: resolveTimeoutAutoSubmitInput(),
+      selected_options: [],
+      images: [],
+      metadata: buildResponseMetadata('popup_timeout_auto_submit'),
+    }
+
+    if (props.mockMode) {
+      message.success('超时自动提交已触发')
+    }
+    else {
+      await sendResponseAndExit(response)
+    }
+
+    emit('response', response)
+  }
+  catch (error) {
+    console.error('超时自动提交失败:', error)
+    message.error('超时自动提交失败，请重试')
   }
   finally {
     submitting.value = false

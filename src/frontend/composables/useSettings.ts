@@ -23,7 +23,12 @@ function createSettings() {
 
   // 继续回复设置
   const continueReplyEnabled = ref(true)
+  const autoContinueThreshold = ref(1000)
   const continuePrompt = ref('请按照最佳实践继续')
+  const timeoutAutoSubmitEnabled = ref(true)
+  const timeoutAutoSubmitSeconds = ref(400)
+  const timeoutAutoSubmitAction = ref<'retry_xuyan' | 'custom_input'>('retry_xuyan')
+  const timeoutAutoSubmitCustomInput = ref('')
 
   // 窗口约束和 UI 常量
   const windowConstraints = ref({
@@ -111,8 +116,13 @@ function createSettings() {
         const replyConfig = await invoke('get_reply_config')
         if (replyConfig) {
           const config = replyConfig as any
-          continueReplyEnabled.value = config.enable_continue_reply || true
-          continuePrompt.value = config.continue_prompt || '请按照最佳实践继续'
+          continueReplyEnabled.value = config.enable_continue_reply ?? true
+          autoContinueThreshold.value = config.auto_continue_threshold ?? 1000
+          continuePrompt.value = config.continue_prompt ?? '请按照最佳实践继续'
+          timeoutAutoSubmitEnabled.value = config.enable_timeout_auto_submit ?? true
+          timeoutAutoSubmitSeconds.value = Math.max(1, Math.floor(config.timeout_auto_submit_seconds ?? 400))
+          timeoutAutoSubmitAction.value = config.timeout_auto_submit_action === 'custom_input' ? 'custom_input' : 'retry_xuyan'
+          timeoutAutoSubmitCustomInput.value = config.timeout_auto_submit_custom_input ?? ''
         }
       }
       catch {
@@ -378,15 +388,44 @@ function createSettings() {
   }
 
   // 更新继续回复设置
-  async function updateReplyConfig(config: { enable_continue_reply?: boolean, continue_prompt?: string }) {
+  async function updateReplyConfig(config: {
+    enable_continue_reply?: boolean
+    continue_prompt?: string
+    enable_timeout_auto_submit?: boolean
+    timeout_auto_submit_seconds?: number
+    timeout_auto_submit_action?: 'retry_xuyan' | 'custom_input'
+    timeout_auto_submit_custom_input?: string
+  }) {
     try {
-      await invoke('set_reply_config', { config })
+      const replyConfig = {
+        enable_continue_reply: config.enable_continue_reply ?? continueReplyEnabled.value,
+        auto_continue_threshold: autoContinueThreshold.value,
+        continue_prompt: config.continue_prompt ?? continuePrompt.value,
+        enable_timeout_auto_submit: config.enable_timeout_auto_submit ?? timeoutAutoSubmitEnabled.value,
+        timeout_auto_submit_seconds: Math.max(1, Math.floor(config.timeout_auto_submit_seconds ?? timeoutAutoSubmitSeconds.value)),
+        timeout_auto_submit_action: config.timeout_auto_submit_action ?? timeoutAutoSubmitAction.value,
+        timeout_auto_submit_custom_input: config.timeout_auto_submit_custom_input ?? timeoutAutoSubmitCustomInput.value,
+      }
+
+      await invoke('set_reply_config', { replyConfig })
 
       if (config.enable_continue_reply !== undefined) {
         continueReplyEnabled.value = config.enable_continue_reply
       }
       if (config.continue_prompt !== undefined) {
         continuePrompt.value = config.continue_prompt
+      }
+      if (config.enable_timeout_auto_submit !== undefined) {
+        timeoutAutoSubmitEnabled.value = config.enable_timeout_auto_submit
+      }
+      if (config.timeout_auto_submit_seconds !== undefined) {
+        timeoutAutoSubmitSeconds.value = Math.max(1, Math.floor(config.timeout_auto_submit_seconds))
+      }
+      if (config.timeout_auto_submit_action !== undefined) {
+        timeoutAutoSubmitAction.value = config.timeout_auto_submit_action
+      }
+      if (config.timeout_auto_submit_custom_input !== undefined) {
+        timeoutAutoSubmitCustomInput.value = config.timeout_auto_submit_custom_input
       }
 
       if (message) {
@@ -456,7 +495,12 @@ function createSettings() {
     popupLayoutMode,
     windowConstraints,
     continueReplyEnabled,
+    autoContinueThreshold,
     continuePrompt,
+    timeoutAutoSubmitEnabled,
+    timeoutAutoSubmitSeconds,
+    timeoutAutoSubmitAction,
+    timeoutAutoSubmitCustomInput,
 
     // 方法
     setMessageInstance,

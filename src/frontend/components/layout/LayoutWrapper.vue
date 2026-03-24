@@ -16,6 +16,10 @@ interface AppConfig {
   reply: {
     enabled: boolean
     prompt: string
+    timeoutAutoSubmitEnabled: boolean
+    timeoutAutoSubmitSeconds: number
+    timeoutAutoSubmitAction: 'retry_xuyan' | 'custom_input'
+    timeoutAutoSubmitCustomInput: string
   }
   popupLayoutMode?: string
 }

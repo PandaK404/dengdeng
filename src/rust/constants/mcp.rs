@@ -21,6 +21,18 @@ pub const DEFAULT_AUTO_CONTINUE_THRESHOLD: u32 = 1000;
 /// 默认继续提示词
 pub const DEFAULT_CONTINUE_PROMPT: &str = "请按照最佳实践继续";
 
+/// 默认启用超时自动提交
+pub const DEFAULT_TIMEOUT_AUTO_SUBMIT_ENABLED: bool = true;
+
+/// 默认超时自动提交秒数
+pub const DEFAULT_TIMEOUT_AUTO_SUBMIT_SECONDS: u32 = 400;
+
+/// 默认超时自动提交动作
+pub const DEFAULT_TIMEOUT_AUTO_SUBMIT_ACTION: &str = "retry_xuyan";
+
+/// 默认超时自动提交自定义输入
+pub const DEFAULT_TIMEOUT_AUTO_SUBMIT_CUSTOM_INPUT: &str = "";
+
 /// MCP 请求超时时间 (ms)
 pub const REQUEST_TIMEOUT_MS: u64 = 30000;
 
@@ -61,7 +73,7 @@ impl Default for McpConfig {
         Self {
             tools: vec![
                 McpToolConfig::new(TOOL_XU, true, false), // 续言工具不可禁用
-                McpToolConfig::new(TOOL_JI, false, true),   // 记忆管理工具可禁用，默认关闭
+                McpToolConfig::new(TOOL_JI, false, true), // 记忆管理工具可禁用，默认关闭
                 McpToolConfig::new(TOOL_SOU, false, true), // 代码搜索工具可禁用，默认关闭
             ],
             continue_reply_enabled: DEFAULT_CONTINUE_REPLY_ENABLED,

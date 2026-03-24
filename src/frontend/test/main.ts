@@ -79,7 +79,15 @@ if (!window.__TAURI__) {
           return { theme: 'dark' }
         }
         if (command === 'get_reply_config') {
-          return { continue_prompt: '请按照最佳实践继续' }
+          return {
+            enable_continue_reply: true,
+            auto_continue_threshold: 1000,
+            continue_prompt: '请按照最佳实践继续',
+            enable_timeout_auto_submit: true,
+            timeout_auto_submit_seconds: 400,
+            timeout_auto_submit_action: 'retry_xuyan',
+            timeout_auto_submit_custom_input: '',
+          }
         }
         return {}
       },
