@@ -1,13 +1,18 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { ref } from 'vue'
+import type { McpRequest } from '../types/popup'
 
 /**
  * MCP处理组合式函数
  */
 export function useMcpHandler() {
-  const mcpRequest = ref(null)
+  const mcpRequest = ref<McpRequest | null>(null)
   const showMcpPopup = ref(false)
+
+  function currentSessionId() {
+    return mcpRequest.value?.session_id ?? mcpRequest.value?.id ?? null
+  }
 
   /**
    * 统一的MCP响应处理
@@ -15,7 +20,7 @@ export function useMcpHandler() {
   async function handleMcpResponse(response: any) {
     try {
       // 通过Tauri命令发送响应并退出应用
-      await invoke('send_mcp_response', { response })
+      await invoke('send_mcp_response', { response, sessionId: currentSessionId() })
       await invoke('exit_app')
     }
     catch (error) {
@@ -29,7 +34,7 @@ export function useMcpHandler() {
   async function handleMcpCancel() {
     try {
       // 发送取消信息并退出应用
-      await invoke('send_mcp_response', { response: 'CANCELLED' })
+      await invoke('send_mcp_response', { response: 'CANCELLED', sessionId: currentSessionId() })
       await invoke('exit_app')
     }
     catch (error) {
@@ -41,7 +46,7 @@ export function useMcpHandler() {
   /**
    * 显示MCP弹窗
    */
-  async function showMcpDialog(request: any) {
+  async function showMcpDialog(request: McpRequest) {
     // 获取Telegram配置，检查是否需要隐藏前端弹窗
     let shouldShowFrontendPopup = true
     try {
@@ -75,20 +80,8 @@ export function useMcpHandler() {
       console.error('播放音频通知失败:', error)
     }
 
-    // 启动Telegram同步（无论是否显示弹窗都启动）
-    try {
-      if (request?.message) {
-        await invoke('start_telegram_sync', {
-          message: request.message,
-          predefinedOptions: request.predefined_options || [],
-          isMarkdown: request.is_markdown || false,
-        })
-        console.log('✅ Telegram同步启动成功')
-      }
-    }
-    catch (error) {
-      console.error('启动Telegram同步失败:', error)
-    }
+    // GUI 模式下不再自动启动 Telegram 同步，避免多会话共享同一个 Bot / Chat 后串台。
+    // 纯 Telegram 模式由后端 CLI 直接处理，不经过前端。
   }
 
   /**

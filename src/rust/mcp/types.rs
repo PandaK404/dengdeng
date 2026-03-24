@@ -48,6 +48,8 @@ fn default_category() -> String {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PopupRequest {
     pub id: String,
+    #[serde(default)]
+    pub session_id: String,
     pub message: String,
     pub predefined_options: Option<Vec<String>>,
     pub is_markdown: bool,
@@ -73,6 +75,8 @@ pub struct ImageAttachment {
 pub struct ResponseMetadata {
     pub timestamp: Option<String>,
     pub request_id: Option<String>,
+    #[serde(default)]
+    pub session_id: Option<String>,
     pub source: Option<String>,
 }
 
@@ -96,13 +100,26 @@ pub struct ImageSource {
 /// 统一的响应构建函数
 ///
 /// 用于生成标准的JSON响应格式，确保无GUI和有GUI模式输出一致
+fn resolve_session_id(session_id: Option<String>, request_id: &Option<String>) -> Option<String> {
+    match session_id {
+        Some(session_id) if !session_id.trim().is_empty() => Some(session_id),
+        _ => request_id.clone(),
+    }
+}
+
+pub fn popup_session_id(request: &PopupRequest) -> Option<String> {
+    resolve_session_id(Some(request.session_id.clone()), &Some(request.id.clone()))
+}
+
 pub fn build_mcp_response(
     user_input: Option<String>,
     selected_options: Vec<String>,
     images: Vec<ImageAttachment>,
     request_id: Option<String>,
+    session_id: Option<String>,
     source: &str,
 ) -> serde_json::Value {
+    let session_id = resolve_session_id(session_id, &request_id);
     serde_json::json!({
         "user_input": user_input,
         "selected_options": selected_options,
@@ -110,6 +127,7 @@ pub fn build_mcp_response(
         "metadata": {
             "timestamp": chrono::Utc::now().to_rfc3339(),
             "request_id": request_id,
+            "session_id": session_id,
             "source": source
         }
     })
@@ -121,14 +139,26 @@ pub fn build_send_response(
     selected_options: Vec<String>,
     images: Vec<ImageAttachment>,
     request_id: Option<String>,
+    session_id: Option<String>,
     source: &str,
 ) -> String {
-    let response = build_mcp_response(user_input, selected_options, images, request_id, source);
+    let response = build_mcp_response(
+        user_input,
+        selected_options,
+        images,
+        request_id,
+        session_id,
+        source,
+    );
     response.to_string()
 }
 
 /// 构建继续操作的响应
-pub fn build_continue_response(request_id: Option<String>, source: &str) -> String {
+pub fn build_continue_response(
+    request_id: Option<String>,
+    session_id: Option<String>,
+    source: &str,
+) -> String {
     // 动态获取继续提示词
     let continue_prompt = if let Ok(config) = crate::config::load_standalone_config() {
         config.reply_config.continue_prompt
@@ -136,6 +166,93 @@ pub fn build_continue_response(request_id: Option<String>, source: &str) -> Stri
         "请按照最佳实践继续".to_string()
     };
 
-    let response = build_mcp_response(Some(continue_prompt), vec![], vec![], request_id, source);
+    let response = build_mcp_response(
+        Some(continue_prompt),
+        vec![],
+        vec![],
+        request_id,
+        session_id,
+        source,
+    );
     response.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        build_continue_response, build_mcp_response, build_send_response, popup_session_id,
+        PopupRequest,
+    };
+
+    #[test]
+    fn build_mcp_response_preserves_explicit_session_id() {
+        let response = build_mcp_response(
+            Some("继续处理".to_string()),
+            vec!["保留".to_string()],
+            vec![],
+            Some("request-123".to_string()),
+            Some("session-abc".to_string()),
+            "popup",
+        );
+
+        assert_eq!(response["metadata"]["request_id"], "request-123");
+        assert_eq!(response["metadata"]["session_id"], "session-abc");
+    }
+
+    #[test]
+    fn build_mcp_response_falls_back_to_request_id_when_session_id_missing() {
+        let response = build_mcp_response(
+            Some("继续处理".to_string()),
+            vec![],
+            vec![],
+            Some("request-123".to_string()),
+            None,
+            "popup",
+        );
+
+        assert_eq!(response["metadata"]["request_id"], "request-123");
+        assert_eq!(response["metadata"]["session_id"], "request-123");
+    }
+
+    #[test]
+    fn build_send_response_serializes_explicit_session_id() {
+        let response = build_send_response(
+            Some("继续处理".to_string()),
+            vec!["保留".to_string()],
+            vec![],
+            Some("request-123".to_string()),
+            Some("session-abc".to_string()),
+            "popup",
+        );
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+
+        assert_eq!(response["metadata"]["request_id"], "request-123");
+        assert_eq!(response["metadata"]["session_id"], "session-abc");
+    }
+
+    #[test]
+    fn build_continue_response_serializes_explicit_session_id() {
+        let response = build_continue_response(
+            Some("request-123".to_string()),
+            Some("session-abc".to_string()),
+            "popup_continue",
+        );
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+
+        assert_eq!(response["metadata"]["request_id"], "request-123");
+        assert_eq!(response["metadata"]["session_id"], "session-abc");
+    }
+
+    #[test]
+    fn popup_session_id_falls_back_to_request_id_for_legacy_requests() {
+        let request = PopupRequest {
+            id: "request-123".to_string(),
+            session_id: String::new(),
+            message: "继续处理".to_string(),
+            predefined_options: None,
+            is_markdown: true,
+        };
+
+        assert_eq!(popup_session_id(&request).as_deref(), Some("request-123"));
+    }
 }

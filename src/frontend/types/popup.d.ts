@@ -2,6 +2,7 @@
 
 export interface McpRequest {
   id: string
+  session_id?: string
   message: string
   predefined_options?: string[]
   is_markdown?: boolean
@@ -79,6 +80,7 @@ export interface ImageAttachment {
 export interface ResponseMetadata {
   timestamp: string | null
   request_id: string | null
+  session_id: string | null
   source: string | null
 }
 

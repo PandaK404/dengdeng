@@ -75,6 +75,7 @@ const continuePrompt = ref('请按照最佳实践继续')
 const isVisible = computed(() => !!props.request)
 const hasOptions = computed(() => (props.request?.predefined_options?.length ?? 0) > 0)
 const isSplitLayout = computed(() => (props.appConfig.popupLayoutMode ?? 'split') === 'split')
+const currentSessionId = computed(() => props.request?.session_id || props.request?.id || null)
 const canSubmit = computed(() => {
   if (hasOptions.value) {
     return selectedOptions.value.length > 0 || userInput.value.trim().length > 0 || draggedImages.value.length > 0
@@ -216,6 +217,25 @@ function resetForm() {
   submitting.value = false
 }
 
+function buildResponseMetadata(source: string) {
+  return {
+    timestamp: new Date().toISOString(),
+    request_id: props.request?.id || null,
+    session_id: currentSessionId.value,
+    source,
+  }
+}
+
+async function sendResponseAndExit(response: Record<string, any>) {
+  if (props.mockMode) {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    return
+  }
+
+  await invoke('send_mcp_response', { response, sessionId: currentSessionId.value })
+  await invoke('exit_app')
+}
+
 // 处理提交
 async function handleSubmit() {
   if (!canSubmit.value || submitting.value)
@@ -233,11 +253,7 @@ async function handleSubmit() {
         media_type: 'image/png',
         filename: null,
       })),
-      metadata: {
-        timestamp: new Date().toISOString(),
-        request_id: props.request?.id || null,
-        source: 'popup',
-      },
+      metadata: buildResponseMetadata('popup'),
     }
 
     // 如果没有任何有效内容，设置默认用户输入
@@ -246,14 +262,10 @@ async function handleSubmit() {
     }
 
     if (props.mockMode) {
-      // 模拟模式下的延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
       message.success('模拟响应发送成功')
     }
     else {
-      // 实际发送响应
-      await invoke('send_mcp_response', { response })
-      await invoke('exit_app')
+      await sendResponseAndExit(response)
     }
 
     emit('response', response)
@@ -297,22 +309,14 @@ async function handleContinue() {
       user_input: continuePrompt.value,
       selected_options: [],
       images: [],
-      metadata: {
-        timestamp: new Date().toISOString(),
-        request_id: props.request?.id || null,
-        source: 'popup_continue',
-      },
+      metadata: buildResponseMetadata('popup_continue'),
     }
 
     if (props.mockMode) {
-      // 模拟模式下的延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
       message.success('继续请求发送成功')
     }
     else {
-      // 实际发送继续请求
-      await invoke('send_mcp_response', { response })
-      await invoke('exit_app')
+      await sendResponseAndExit(response)
     }
 
     emit('response', response)
@@ -359,22 +363,14 @@ Here is my original instruction:
       user_input: enhancePrompt,
       selected_options: [],
       images: [],
-      metadata: {
-        timestamp: new Date().toISOString(),
-        request_id: props.request?.id || null,
-        source: 'popup_enhance',
-      },
+      metadata: buildResponseMetadata('popup_enhance'),
     }
 
     if (props.mockMode) {
-      // 模拟模式下的延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
       message.success('增强请求发送成功')
     }
     else {
-      // 实际发送增强请求
-      await invoke('send_mcp_response', { response })
-      await invoke('exit_app')
+      await sendResponseAndExit(response)
     }
 
     emit('response', response)

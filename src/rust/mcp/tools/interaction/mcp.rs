@@ -1,9 +1,9 @@
 use anyhow::Result;
-use rmcp::{Error as McpError, model::*};
+use rmcp::{model::*, Error as McpError};
 
-use crate::mcp::{PopupRequest, XuRequest};
 use crate::mcp::handlers::{create_tauri_popup, parse_mcp_response};
 use crate::mcp::utils::{generate_request_id, popup_error};
+use crate::mcp::{PopupRequest, XuRequest};
 
 /// 智能代码审查交互工具
 ///
@@ -12,11 +12,11 @@ use crate::mcp::utils::{generate_request_id, popup_error};
 pub struct InteractionTool;
 
 impl InteractionTool {
-    pub async fn xu(
-        request: XuRequest,
-    ) -> Result<CallToolResult, McpError> {
+    pub async fn xu(request: XuRequest) -> Result<CallToolResult, McpError> {
+        let session_id = generate_request_id();
         let popup_request = PopupRequest {
-            id: generate_request_id(),
+            id: session_id.clone(),
+            session_id,
             message: request.message,
             predefined_options: if request.predefined_options.is_empty() {
                 None
@@ -32,9 +32,7 @@ impl InteractionTool {
                 let content = parse_mcp_response(&response)?;
                 Ok(CallToolResult::success(content))
             }
-            Err(e) => {
-                Err(popup_error(e.to_string()).into())
-            }
+            Err(e) => Err(popup_error(e.to_string()).into()),
         }
     }
 }
