@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { McpRequest } from '../../types/popup'
+import { lightTheme } from 'naive-ui'
 import { computed, onMounted } from 'vue'
 import { useShortcuts } from '../../composables/useShortcuts'
 
@@ -11,6 +12,7 @@ interface Props {
   connectionStatus?: string
   continueReplyEnabled?: boolean
   inputStatusText?: string
+  layoutMode?: string
 }
 
 interface Emits {
@@ -26,9 +28,11 @@ const props = withDefaults(defineProps<Props>(), {
   connectionStatus: '已连接',
   continueReplyEnabled: true,
   inputStatusText: '',
+  layoutMode: 'vertical',
 })
 
 const emit = defineEmits<Emits>()
+const isSplitLayout = computed(() => props.layoutMode === 'split')
 
 // 使用自定义快捷键系统
 const {
@@ -105,81 +109,92 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="px-4 py-3 bg-gray-100 min-h-[60px] select-none">
-    <div v-if="!loading" class="flex justify-between items-center">
-      <!-- 左侧状态信息 -->
-      <div class="flex items-center">
-        <div class="flex items-center gap-2 text-xs text-gray-600">
-          <div class="w-2 h-2 rounded-full bg-primary-500" />
-          <span class="font-medium">{{ connectionStatus }}</span>
-          <span class="opacity-60">|</span>
-          <span class="opacity-60">{{ statusText }}</span>
+  <div :class="isSplitLayout ? 'min-h-[72px] bg-stone-100/70 px-5 py-3 select-none' : 'min-h-[60px] bg-gray-100 px-4 py-3 select-none'">
+    <n-config-provider :theme="isSplitLayout ? lightTheme : null">
+      <div v-if="!loading" :class="isSplitLayout ? 'flex flex-wrap items-center justify-between gap-3' : 'flex justify-between items-center'">
+        <!-- 左侧状态信息 -->
+        <div class="flex items-center">
+          <div :class="isSplitLayout ? 'flex items-center gap-3 text-xs text-stone-500' : 'flex items-center gap-2 text-xs text-gray-600'">
+            <div :class="isSplitLayout ? 'h-2 w-2 rounded-full bg-amber-700' : 'h-2 w-2 rounded-full bg-primary-500'" />
+            <span :class="isSplitLayout ? 'font-semibold text-stone-700' : 'font-medium'">{{ connectionStatus }}</span>
+            <span class="opacity-40">/</span>
+            <span class="tabular-nums opacity-80">{{ statusText }}</span>
+          </div>
+        </div>
+
+        <!-- 右侧操作按钮 -->
+        <div class="flex items-center" data-guide="popup-actions">
+          <n-space :size="isSplitLayout ? 'medium' : 'small'">
+            <!-- 增强按钮 -->
+            <n-tooltip trigger="hover" placement="top">
+              <template #trigger>
+                <n-button
+                  :disabled="!canSubmit || submitting"
+                  size="medium"
+                  :type="isSplitLayout ? 'default' : 'info'"
+                  :secondary="isSplitLayout"
+                  class="min-w-[84px]"
+                  data-guide="enhance-button"
+                  @click="handleEnhance"
+                >
+                  <template #icon>
+                    <div class="i-carbon-magic-wand w-4 h-4" />
+                  </template>
+                  增强
+                </n-button>
+              </template>
+              {{ enhanceShortcutText }}
+            </n-tooltip>
+
+            <!-- 继续按钮 -->
+            <n-tooltip v-if="continueReplyEnabled" trigger="hover" placement="top">
+              <template #trigger>
+                <n-button
+                  :disabled="submitting"
+                  :loading="submitting"
+                  size="medium"
+                  :quaternary="isSplitLayout"
+                  type="default"
+                  class="min-w-[84px]"
+                  data-guide="continue-button"
+                  @click="handleContinue"
+                >
+                  <template #icon>
+                    <div class="i-carbon-play w-4 h-4" />
+                  </template>
+                  继续
+                </n-button>
+              </template>
+              {{ continueShortcutText }}
+            </n-tooltip>
+
+            <!-- 发送按钮 -->
+            <n-tooltip trigger="hover" placement="top">
+              <template #trigger>
+                <n-button
+                  :disabled="!canSubmit || submitting"
+                  :loading="submitting"
+                  size="medium"
+                  :secondary="isSplitLayout"
+                  :color="isSplitLayout ? '#6b5a45' : undefined"
+                  :text-color="isSplitLayout ? '#fafaf9' : undefined"
+                  :border-color="isSplitLayout ? '#6b5a45' : undefined"
+                  :type="isSplitLayout ? 'default' : 'primary'"
+                  class="min-w-[88px]"
+                  data-guide="submit-button"
+                  @click="handleSubmit"
+                >
+                  <template #icon>
+                    <div v-if="!submitting" class="i-carbon-send w-4 h-4" />
+                  </template>
+                  {{ submitting ? '发送中...' : '发送' }}
+                </n-button>
+              </template>
+              {{ shortcutText }}
+            </n-tooltip>
+          </n-space>
         </div>
       </div>
-
-      <!-- 右侧操作按钮 -->
-      <div class="flex items-center" data-guide="popup-actions">
-        <n-space size="small">
-          <!-- 增强按钮 -->
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <n-button
-                :disabled="!canSubmit || submitting"
-                size="medium"
-                type="info"
-                data-guide="enhance-button"
-                @click="handleEnhance"
-              >
-                <template #icon>
-                  <div class="i-carbon-magic-wand w-4 h-4" />
-                </template>
-                增强
-              </n-button>
-            </template>
-            {{ enhanceShortcutText }}
-          </n-tooltip>
-
-          <!-- 继续按钮 -->
-          <n-tooltip v-if="continueReplyEnabled" trigger="hover" placement="top">
-            <template #trigger>
-              <n-button
-                :disabled="submitting"
-                :loading="submitting"
-                size="medium"
-                type="default"
-                data-guide="continue-button"
-                @click="handleContinue"
-              >
-                <template #icon>
-                  <div class="i-carbon-play w-4 h-4" />
-                </template>
-                继续
-              </n-button>
-            </template>
-            {{ continueShortcutText }}
-          </n-tooltip>
-
-          <!-- 发送按钮 -->
-          <n-tooltip trigger="hover" placement="top">
-            <template #trigger>
-              <n-button
-                type="primary"
-                :disabled="!canSubmit || submitting"
-                :loading="submitting"
-                size="medium"
-                data-guide="submit-button"
-                @click="handleSubmit"
-              >
-                <template #icon>
-                  <div v-if="!submitting" class="i-carbon-send w-4 h-4" />
-                </template>
-                {{ submitting ? '发送中...' : '发送' }}
-              </n-button>
-            </template>
-            {{ shortcutText }}
-          </n-tooltip>
-        </n-space>
-      </div>
-    </div>
+    </n-config-provider>
   </div>
 </template>

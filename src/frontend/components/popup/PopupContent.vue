@@ -3,11 +3,12 @@ import type { McpRequest } from '../../types/popup'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import { useMessage } from 'naive-ui'
-import { nextTick, onMounted, onUpdated, watch } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, watch } from 'vue'
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   currentTheme: 'dark',
+  layoutMode: 'vertical',
 })
 
 const emit = defineEmits<Emits>()
@@ -72,6 +73,7 @@ interface Props {
   request: McpRequest | null
   loading?: boolean
   currentTheme?: string
+  layoutMode?: string
 }
 
 interface Emits {
@@ -79,6 +81,7 @@ interface Emits {
 }
 
 const message = useMessage()
+const resolvedTheme = computed(() => (props.layoutMode === 'split' ? 'light' : props.currentTheme))
 
 // 创建 Markdown 实例 - 保持代码高亮功能
 const md = new MarkdownIt({
@@ -153,6 +156,9 @@ function createCopyButton(preEl: Element) {
   if (preEl.querySelector('.copy-button'))
     return
 
+  const idleColor = resolvedTheme.value === 'light' ? '#57534e' : '#9ca3af'
+  const hoverColor = resolvedTheme.value === 'light' ? '#92400e' : '#14b8a6'
+
   const copyButton = document.createElement('div')
   copyButton.className = 'copy-button'
   // 极简设计：无背景，无边框
@@ -178,14 +184,14 @@ function createCopyButton(preEl: Element) {
       justify-content: center;
       width: 100%;
       height: 100%;
-      color: #9ca3af;
+      color: ${idleColor};
       transition: color 0.2s ease;
       border: none;
       background: none;
       cursor: pointer;
       padding: 0;
       margin: 0;
-    " onmouseover="this.style.color='#14b8a6'" onmouseout="this.style.color='#9ca3af'">
+    " onmouseover="this.style.color='${hoverColor}'" onmouseout="this.style.color='${idleColor}'">
       <div class="i-carbon-copy" style="width: 16px; height: 16px; display: block;"></div>
     </button>
   `
@@ -289,14 +295,14 @@ watch(() => props.loading, (newLoading) => {
 
 onMounted(() => {
   // 初始化代码高亮样式
-  loadHighlightStyle(props.currentTheme)
+  loadHighlightStyle(resolvedTheme.value)
   if (props.request) {
     setupCodeCopy()
   }
 })
 
 // 监听主题变化
-watch(() => props.currentTheme, (newTheme) => {
+watch(resolvedTheme, (newTheme) => {
   loadHighlightStyle(newTheme)
 }, { immediate: false })
 
@@ -309,11 +315,11 @@ onUpdated(() => {
 </script>
 
 <template>
-  <div class="text-white">
+  <div :class="resolvedTheme === 'light' ? 'text-stone-800' : 'text-white'">
     <!-- 加载状态 -->
     <div v-if="loading" class="flex flex-col items-center justify-center py-8">
       <n-spin size="medium" />
-      <p class="text-sm mt-3 text-white opacity-60">
+      <p :class="resolvedTheme === 'light' ? 'mt-3 text-sm text-stone-500' : 'mt-3 text-sm text-white opacity-60'">
         加载中...
       </p>
     </div>
@@ -323,27 +329,36 @@ onUpdated(() => {
       <!-- 主要内容 -->
       <div
         v-if="request.is_markdown"
-        class="markdown-content prose prose-sm max-w-none prose-headings:font-semibold prose-headings:leading-tight prose-h1:!mt-4 prose-h1:!mb-2 prose-h1:!text-lg prose-h1:!font-bold prose-h1:!leading-tight prose-h2:!mt-3 prose-h2:!mb-1.5 prose-h2:!text-base prose-h2:!font-semibold prose-h2:!leading-tight prose-h3:!mt-2.5 prose-h3:!mb-1 prose-h3:!text-sm prose-h3:!font-medium prose-h3:!leading-tight prose-h4:!mt-2 prose-h4:!mb-1 prose-h4:!text-sm prose-h4:!font-medium prose-h4:!leading-tight prose-p:my-1 prose-p:leading-relaxed prose-p:text-sm prose-ul:my-1 prose-ul:text-sm prose-ul:pl-4 prose-ol:my-1 prose-ol:text-sm prose-ol:pl-4 prose-li:my-1 prose-li:text-sm prose-li:leading-relaxed prose-blockquote:my-2 prose-blockquote:text-sm prose-blockquote:pl-4 prose-blockquote:ml-0 prose-blockquote:italic prose-blockquote:border-l-4 prose-blockquote:border-primary-500 prose-pre:relative prose-pre:border prose-pre:rounded-lg prose-pre:p-4 prose-pre:my-3 prose-pre:overflow-x-auto scrollbar-code prose-code:px-1 prose-code:py-0.5 prose-code:text-xs prose-code:cursor-pointer prose-code:font-mono prose-a:text-primary-500 prose-a:no-underline prose-a:cursor-default [&_a[onclick='return false;']]:opacity-60 [&_a[onclick='return false;']]:cursor-not-allowed" :class="[
-          currentTheme === 'light' ? 'prose-slate' : 'prose-invert',
-          currentTheme === 'light' ? 'prose-headings:text-gray-900' : 'prose-headings:text-white',
-          currentTheme === 'light' ? 'prose-p:text-gray-700' : 'prose-p:text-white prose-p:opacity-85',
-          currentTheme === 'light' ? 'prose-ul:text-gray-700 prose-ol:text-gray-700 prose-li:text-gray-700' : 'prose-ul:text-white prose-ul:opacity-85 prose-ol:text-white prose-ol:opacity-85 prose-li:text-white prose-li:opacity-85',
-          currentTheme === 'light' ? 'prose-blockquote:text-gray-600' : 'prose-blockquote:text-gray-300 prose-blockquote:opacity-90',
-          currentTheme === 'light' ? 'prose-pre:bg-gray-50 prose-pre:border-gray-200' : 'prose-pre:bg-black prose-pre:border-gray-700',
-          currentTheme === 'light' ? 'prose-strong:text-gray-900 prose-strong:font-semibold' : 'prose-strong:text-white prose-strong:font-semibold',
-          currentTheme === 'light' ? 'prose-em:text-gray-600 prose-em:italic' : 'prose-em:text-gray-300 prose-em:italic',
+        class="markdown-content prose prose-sm max-w-none text-pretty prose-headings:font-semibold prose-headings:leading-tight prose-headings:text-balance prose-h1:!mt-4 prose-h1:!mb-2 prose-h1:!text-lg prose-h1:!font-bold prose-h1:!leading-tight prose-h2:!mt-3 prose-h2:!mb-1.5 prose-h2:!text-base prose-h2:!font-semibold prose-h2:!leading-tight prose-h3:!mt-2.5 prose-h3:!mb-1 prose-h3:!text-sm prose-h3:!font-medium prose-h3:!leading-tight prose-h4:!mt-2 prose-h4:!mb-1 prose-h4:!text-sm prose-h4:!font-medium prose-h4:!leading-tight prose-p:my-1 prose-p:text-sm prose-p:leading-7 prose-p:text-pretty prose-ul:my-1 prose-ul:text-sm prose-ul:pl-4 prose-ol:my-1 prose-ol:text-sm prose-ol:pl-4 prose-li:my-1 prose-li:text-sm prose-li:leading-7 prose-li:text-pretty prose-blockquote:my-3 prose-blockquote:ml-0 prose-blockquote:border-l-4 prose-blockquote:pl-4 prose-blockquote:text-sm prose-blockquote:italic prose-pre:relative prose-pre:my-3 prose-pre:overflow-x-auto prose-pre:rounded-xl prose-pre:border prose-pre:p-4 scrollbar-code prose-code:cursor-pointer prose-code:rounded prose-code:px-1.5 prose-code:py-0.5 prose-code:text-xs prose-code:font-mono prose-a:no-underline prose-a:cursor-default [&_a[onclick='return false;']]:opacity-60 [&_a[onclick='return false;']]:cursor-not-allowed"
+        :class="[
+          resolvedTheme === 'light' ? 'prose-stone' : 'prose-invert',
+          resolvedTheme === 'light' ? 'prose-headings:text-stone-900' : 'prose-headings:text-white',
+          resolvedTheme === 'light' ? 'prose-p:text-stone-700' : 'prose-p:text-white prose-p:opacity-85',
+          resolvedTheme === 'light' ? 'prose-ul:text-stone-700 prose-ol:text-stone-700 prose-li:text-stone-700' : 'prose-ul:text-white prose-ul:opacity-85 prose-ol:text-white prose-ol:opacity-85 prose-li:text-white prose-li:opacity-85',
+          resolvedTheme === 'light' ? 'prose-blockquote:border-stone-300 prose-blockquote:text-stone-600' : 'prose-blockquote:border-primary-500 prose-blockquote:text-gray-300 prose-blockquote:opacity-90',
+          resolvedTheme === 'light' ? 'prose-pre:bg-stone-100 prose-pre:border-stone-200 prose-code:bg-stone-100 prose-code:text-stone-700' : 'prose-pre:bg-black prose-pre:border-gray-700 prose-code:text-white',
+          resolvedTheme === 'light' ? 'prose-strong:text-stone-900 prose-strong:font-semibold' : 'prose-strong:text-white prose-strong:font-semibold',
+          resolvedTheme === 'light' ? 'prose-em:text-stone-600 prose-em:italic' : 'prose-em:text-gray-300 prose-em:italic',
+          resolvedTheme === 'light' ? 'prose-a:text-amber-700' : 'prose-a:text-primary-500',
         ]"
         v-html="renderMarkdown(request.message)"
       />
-      <div v-else class="whitespace-pre-wrap leading-relaxed text-white">
+      <div v-else :class="resolvedTheme === 'light' ? 'whitespace-pre-wrap text-sm leading-7 text-pretty text-stone-700' : 'whitespace-pre-wrap leading-relaxed text-white'">
         {{ request.message }}
       </div>
 
       <!-- 引用原文按钮 - 位于右下角 -->
-      <div class="flex justify-end mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
+      <div
+        :class="resolvedTheme === 'light'
+          ? 'mt-5 flex justify-end border-t border-stone-200 pt-3'
+          : 'mt-4 flex justify-end border-t border-gray-600/30 pt-3'"
+        data-guide="quote-message"
+      >
         <div
           title="点击将AI的消息内容引用到输入框中"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+          :class="resolvedTheme === 'light'
+            ? 'inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50/70 px-3 py-1.5 text-xs font-medium text-amber-800 transition-colors duration-200 hover:border-amber-300 hover:bg-amber-100/70'
+            : 'inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-blue-500/50 bg-blue-500/20 px-3 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:border-blue-500/70 hover:bg-blue-500/30 shadow-sm hover:shadow-md'"
           @click="quoteMessage"
         >
           <div class="i-carbon-quotes w-3.5 h-3.5" />
@@ -354,7 +369,7 @@ onUpdated(() => {
 
     <!-- 错误状态 -->
     <n-alert v-else type="error" title="数据加载错误">
-      <div class="text-white">
+      <div :class="resolvedTheme === 'light' ? 'text-stone-700' : 'text-white'">
         Request对象: {{ JSON.stringify(request) }}
       </div>
     </n-alert>
