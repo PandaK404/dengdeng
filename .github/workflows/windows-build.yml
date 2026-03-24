@@ -17,10 +17,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -29,7 +32,7 @@ jobs:
         uses: swatinem/rust-cache@v2
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2.0" --locked
