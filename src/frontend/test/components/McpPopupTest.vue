@@ -12,6 +12,24 @@ const showControls = ref(props.showControls !== false)
 
 const currentTheme = ref('dark')
 const showPopup = ref(true)
+const appConfig = ref({
+  theme: 'dark',
+  window: {
+    alwaysOnTop: false,
+    width: 600,
+    height: 720,
+    fixed: false,
+  },
+  audio: {
+    enabled: false,
+    url: '',
+  },
+  reply: {
+    enabled: true,
+    prompt: '请按照最佳实践继续',
+  },
+  popupLayoutMode: 'split',
+})
 
 // 模拟不同类型的 MCP 请求
 const requestTemplates = [
@@ -171,6 +189,7 @@ function handleCancel() {
 
 function handleThemeChange(theme: string) {
   currentTheme.value = theme
+  appConfig.value.theme = theme
   console.log('主题切换:', theme)
 }
 
@@ -251,7 +270,7 @@ function togglePopup() {
           <div v-if="showPopup" class="popup-mode">
             <div class="popup-overlay">
               <McpPopup
-                :request="currentRequest" :current-theme="currentTheme" :mock-mode="true"
+                :request="currentRequest" :app-config="appConfig" :mock-mode="true"
                 @response="handleResponse" @cancel="handleCancel" @theme-change="handleThemeChange"
                 @open-main-layout="handleOpenMainLayout"
               />
@@ -300,7 +319,7 @@ function togglePopup() {
     <!-- 纯净模式 - 只显示弹窗 -->
     <div v-else class="pure-mode">
       <McpPopup
-        :request="currentRequest" :current-theme="currentTheme" :mock-mode="true" @response="handleResponse"
+        :request="currentRequest" :app-config="appConfig" :mock-mode="true" @response="handleResponse"
         @cancel="handleCancel" @theme-change="handleThemeChange" @open-main-layout="handleOpenMainLayout"
       />
     </div>
