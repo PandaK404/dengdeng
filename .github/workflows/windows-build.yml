@@ -34,11 +34,14 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2.0" --locked
+      - name: Build frontend assets
+        shell: pwsh
+        env:
+          TAURI_PLATFORM: windows
+        run: pnpm build
 
-      - name: Build with Tauri (no bundle)
-        run: cargo tauri build --no-bundle
+      - name: Build Windows binaries
+        run: cargo build --release --bin 续言设置 --bin 续言
 
       - name: Package Windows artifacts
         id: package
