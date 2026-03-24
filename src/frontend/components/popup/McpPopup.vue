@@ -487,27 +487,14 @@ async function handleTimeoutAutoSubmit() {
 <template>
   <div v-if="isVisible" class="flex min-h-0 flex-1 flex-col">
     <template v-if="isSplitLayout">
-      <div class="flex min-h-0 flex-1 flex-col gap-4 bg-stone-200/60 px-3 pb-4 pt-3">
-        <div class="min-h-[180px] flex-[0_0_42%] overflow-hidden rounded-2xl border border-stone-300/80 bg-stone-50 shadow-sm select-text" data-guide="popup-content">
-          <div class="flex h-full min-h-0 flex-col">
-            <div class="border-b border-stone-200 px-5 py-3">
-              <p class="text-xs font-medium text-stone-500">
-                输出内容
-              </p>
-            </div>
-            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
-              <PopupContent
-                :request="request"
-                :loading="loading"
-                current-theme="light"
-                layout-mode="split"
-                @quote-message="handleQuoteMessage"
-              />
-            </div>
+      <div class="flex min-h-0 flex-1 flex-col gap-3 px-2 pb-3 pt-2">
+        <div class="min-h-[160px] flex-[0_0_42%] overflow-y-auto scrollbar-thin rounded-lg bg-black-100 px-4 py-3 select-text" data-guide="popup-content">
+          <div class="min-h-full">
+            <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" />
           </div>
         </div>
 
-        <div class="min-h-0 flex-1 overflow-hidden rounded-2xl border border-stone-300/90 bg-stone-100/90 p-4 shadow-sm select-text">
+        <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-black-200 bg-black-100/70 p-3 select-text">
           <div class="h-full min-h-0">
             <PopupInput
               ref="inputRef"
@@ -528,13 +515,7 @@ async function handleTimeoutAutoSubmit() {
       <div class="flex-1 overflow-y-auto scrollbar-thin">
         <!-- 消息内容 - 允许选中 -->
         <div class="mx-2 mt-2 mb-1 px-4 py-3 bg-black-100 rounded-lg select-text" data-guide="popup-content">
-          <PopupContent
-            :request="request"
-            :loading="loading"
-            :current-theme="props.appConfig.theme"
-            layout-mode="vertical"
-            @quote-message="handleQuoteMessage"
-          />
+          <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" />
         </div>
 
         <!-- 输入和选项 - 允许选中 -->
@@ -554,16 +535,10 @@ async function handleTimeoutAutoSubmit() {
     </template>
 
     <!-- 底部操作栏 - 固定在底部 -->
-    <div
-      :class="isSplitLayout
-        ? 'flex-shrink-0 border-t border-stone-300/90 bg-stone-100/95'
-        : 'flex-shrink-0 bg-black-100 border-t-2 border-black-200'"
-      data-guide="popup-actions"
-    >
+    <div class="flex-shrink-0 bg-black-100 border-t-2 border-black-200" data-guide="popup-actions">
       <PopupActions
         :request="request" :loading="loading" :submitting="submitting" :can-submit="canSubmit"
         :continue-reply-enabled="continueReplyEnabled" :input-status-text="inputStatusText"
-        :layout-mode="isSplitLayout ? 'split' : 'vertical'"
         @submit="handleSubmit" @continue="handleContinue" @enhance="handleEnhance"
       />
     </div>

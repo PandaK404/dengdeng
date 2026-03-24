@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useSortable } from '@vueuse/integrations/useSortable'
-import { lightTheme, useMessage } from 'naive-ui'
+import { useMessage } from 'naive-ui'
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useKeyboard } from '../../composables/useKeyboard'
 
@@ -625,212 +625,168 @@ defineExpose({
 <template>
   <div :class="isSplitLayout ? 'grid h-full min-h-0 gap-4 grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]' : 'space-y-3'">
     <template v-if="isSplitLayout">
-      <n-config-provider :theme="lightTheme">
-        <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border border-stone-300 bg-stone-100/85 p-4 shadow-sm">
-          <div class="flex items-center justify-between border-b border-stone-200 pb-3">
-            <div>
-              <h4 class="text-sm font-semibold text-stone-800">
-                选项栏
-              </h4>
-              <p class="mt-1 text-xs text-stone-500">
-                预设内容、模板和上下文开关集中在这里。
-              </p>
+      <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-lg border border-gray-700 bg-black/20 p-3">
+        <div class="flex min-h-0 flex-col gap-2" data-guide="predefined-options">
+          <h4 class="text-sm font-medium text-white">
+            预定义内容
+          </h4>
+
+          <div class="min-h-0 flex-1 overflow-y-auto pr-1">
+            <n-space v-if="!loading && hasOptions" vertical size="small">
+              <div
+                v-for="(option, index) in request!.predefined_options"
+                :key="`option-${index}`"
+                class="rounded-lg border border-gray-600 bg-gray-100 p-3 cursor-pointer hover:opacity-80 transition-opacity"
+                @click="handleOptionToggle(option)"
+              >
+                <n-checkbox
+                  :value="option"
+                  :checked="selectedOptions.includes(option)"
+                  :disabled="submitting"
+                  size="medium"
+                  @update:checked="(checked: boolean) => handleOptionChange(option, checked)"
+                  @click.stop
+                >
+                  {{ option }}
+                </n-checkbox>
+              </div>
+            </n-space>
+            <div
+              v-else
+              class="flex min-h-[84px] items-center justify-center rounded-lg border border-dashed border-gray-600 px-4 text-center text-xs text-on-surface-secondary"
+            >
+              当前没有预定义内容
             </div>
-          </div>
-
-          <div class="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-            <section class="rounded-2xl border border-stone-200 bg-stone-50/90 p-3" data-guide="predefined-options">
-              <div class="mb-3">
-                <h5 class="text-sm font-semibold text-stone-800">
-                  预定义内容
-                </h5>
-                <p class="mt-1 text-xs text-stone-500">
-                  可直接勾选已有要求。
-                </p>
-              </div>
-
-              <n-space v-if="!loading && hasOptions" vertical size="small">
-                <div
-                  v-for="(option, index) in request!.predefined_options"
-                  :key="`option-${index}`"
-                  :class="selectedOptions.includes(option)
-                    ? 'cursor-pointer rounded-xl border border-amber-300 bg-amber-50/80 p-3 shadow-sm transition-colors duration-200'
-                    : 'cursor-pointer rounded-xl border border-stone-200 bg-white/85 p-3 transition-colors duration-200 hover:border-stone-300 hover:bg-stone-50'"
-                  @click="handleOptionToggle(option)"
-                >
-                  <n-checkbox
-                    :value="option"
-                    :checked="selectedOptions.includes(option)"
-                    :disabled="submitting"
-                    size="medium"
-                    class="editorial-checkbox"
-                    @update:checked="(checked: boolean) => handleOptionChange(option, checked)"
-                    @click.stop
-                  >
-                    {{ option }}
-                  </n-checkbox>
-                </div>
-              </n-space>
-              <div
-                v-else
-                class="flex min-h-[92px] items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white/75 px-4 text-center text-xs text-stone-500"
-              >
-                当前没有预定义内容
-              </div>
-            </section>
-
-            <section
-              v-if="customPromptEnabled && customPrompts.length > 0"
-              class="rounded-2xl border border-stone-200 bg-stone-50/90 p-3"
-              data-guide="custom-prompts"
-            >
-              <div class="mb-3 flex items-center gap-2 text-xs text-stone-500">
-                <div class="i-carbon-bookmark h-3 w-3 text-amber-700" />
-                <span>快捷模板</span>
-              </div>
-              <div
-                ref="promptContainer"
-                data-prompt-container
-                class="flex flex-wrap gap-2"
-              >
-                <div
-                  v-for="prompt in sortablePrompts"
-                  :key="prompt.id"
-                  :title="prompt.description || (prompt.content.trim() ? prompt.content : '清空输入框')"
-                  class="sortable-item inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white/90 px-3 py-1.5 text-xs text-stone-700 transition-colors duration-200 select-none hover:border-amber-300 hover:bg-amber-50/60"
-                >
-                  <div class="drag-handle cursor-move rounded-full p-0.5 transition-colors duration-200 hover:bg-stone-100">
-                    <div class="i-carbon-drag-horizontal h-3 w-3 text-stone-400" />
-                  </div>
-
-                  <div
-                    class="inline-flex items-center cursor-pointer"
-                    @click="handlePromptClick(prompt)"
-                  >
-                    <span>{{ prompt.name }}</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section
-              v-if="customPromptEnabled && conditionalPrompts.length > 0"
-              class="rounded-2xl border border-stone-200 bg-stone-50/90 p-3"
-              data-guide="context-append"
-            >
-              <div class="mb-3 flex items-center gap-2 text-xs text-stone-500">
-                <div class="i-carbon-settings-adjust h-3 w-3 text-amber-700" />
-                <span>上下文追加</span>
-              </div>
-              <div class="grid grid-cols-1 gap-2">
-                <div
-                  v-for="prompt in conditionalPrompts"
-                  :key="prompt.id"
-                  :class="prompt.current_state
-                    ? 'flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50/70 p-3 text-xs transition-colors duration-200'
-                    : 'flex items-center justify-between rounded-xl border border-stone-200 bg-white/85 p-3 text-xs transition-colors duration-200 hover:border-stone-300 hover:bg-stone-50'"
-                >
-                  <div class="mr-2 min-w-0 flex-1">
-                    <div class="truncate text-xs font-semibold text-stone-700" :title="prompt.condition_text || prompt.name">
-                      {{ prompt.condition_text || prompt.name }}
-                    </div>
-                    <div
-                      v-if="getConditionalDescription(prompt)"
-                      class="mt-1 truncate leading-tight text-xs text-stone-500"
-                      :title="getConditionalDescription(prompt)"
-                    >
-                      {{ getConditionalDescription(prompt) }}
-                    </div>
-                  </div>
-                  <n-switch
-                    :value="prompt.current_state ?? false"
-                    size="small"
-                    @update:value="(value: boolean) => handleConditionalToggle(prompt.id, value)"
-                  />
-                </div>
-              </div>
-            </section>
           </div>
         </div>
 
-        <div class="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-300 bg-stone-50 p-4 shadow-sm">
-          <div v-if="!loading" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-            <div class="border-b border-stone-200 pb-3">
-              <h4 class="text-sm font-semibold text-stone-800">
-                {{ hasOptions ? '输入补充说明' : '输入内容' }}
-              </h4>
-              <p class="mt-1 text-xs text-stone-500">
-                {{ hasOptions ? '对已选内容补充背景、限制或语气。' : '在这里直接撰写本次输入，支持粘贴图片。' }}
-              </p>
-            </div>
-
-            <section v-if="uploadedImages.length > 0" class="rounded-2xl border border-stone-200 bg-stone-100/75 p-3">
-              <div class="mb-3 flex items-center justify-between">
-                <h5 class="text-sm font-semibold text-stone-800">
-                  附件
-                </h5>
-                <span class="tabular-nums text-xs text-stone-500">{{ uploadedImages.length }} 张</span>
+        <div v-if="customPromptEnabled && customPrompts.length > 0" class="space-y-2" data-guide="custom-prompts">
+          <div class="flex items-center gap-2 text-xs text-on-surface-secondary">
+            <div class="i-carbon-bookmark w-3 h-3 text-primary-500" />
+            <span>快捷模板</span>
+          </div>
+          <div
+            ref="promptContainer"
+            data-prompt-container
+            class="flex flex-wrap gap-2"
+          >
+            <div
+              v-for="prompt in sortablePrompts"
+              :key="prompt.id"
+              :title="prompt.description || (prompt.content.trim() ? prompt.content : '清空输入框')"
+              class="inline-flex items-center gap-1 rounded border border-gray-600 bg-container-secondary px-2 py-1 text-xs text-on-surface transition-all duration-200 select-none hover:bg-container-tertiary sortable-item"
+            >
+              <div class="drag-handle cursor-move rounded p-0.5 transition-colors hover:bg-container-tertiary">
+                <div class="i-carbon-drag-horizontal h-3 w-3 text-on-surface-secondary" />
               </div>
 
-              <n-image-group>
-                <div class="flex flex-wrap gap-3">
-                  <div
-                    v-for="(image, index) in uploadedImages"
-                    :key="`image-${index}`"
-                    class="relative"
-                  >
-                    <n-image
-                      :src="image"
-                      width="100"
-                      height="100"
-                      object-fit="cover"
-                      class="cursor-pointer rounded-xl border-2 border-stone-200 transition-colors duration-200 hover:border-amber-300"
-                    />
-
-                    <n-button
-                      class="absolute -right-2 -top-2 z-10"
-                      size="tiny"
-                      type="error"
-                      circle
-                      @click="removeImage(index)"
-                    >
-                      <template #icon>
-                        <div class="i-carbon-close h-3 w-3" />
-                      </template>
-                    </n-button>
-
-                    <div class="absolute bottom-1 left-1 z-5 flex h-5 w-5 items-center justify-center rounded-full bg-stone-700 text-xs font-bold text-stone-50 shadow-sm">
-                      {{ index + 1 }}
-                    </div>
-                  </div>
-                </div>
-              </n-image-group>
-            </section>
-            <div
-              v-else
-              class="rounded-2xl border border-dashed border-stone-300 bg-stone-100/50 px-4 py-3 text-xs text-stone-500"
-            >
-              可直接在输入框中粘贴图片 ({{ pasteShortcut }})
+              <div
+                class="inline-flex items-center cursor-pointer"
+                @click="handlePromptClick(prompt)"
+              >
+                <span>{{ prompt.name }}</span>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <div class="editorial-textarea-shell rounded-2xl border border-stone-300 bg-white shadow-sm">
-              <n-input
-                ref="textareaRef"
-                v-model:value="userInput"
-                type="textarea"
+        <div v-if="customPromptEnabled && conditionalPrompts.length > 0" class="space-y-2" data-guide="context-append">
+          <div class="flex items-center gap-2 text-xs text-on-surface-secondary">
+            <div class="i-carbon-settings-adjust w-3 h-3 text-primary-500" />
+            <span>上下文追加</span>
+          </div>
+          <div class="grid grid-cols-1 gap-2 xl:grid-cols-2">
+            <div
+              v-for="prompt in conditionalPrompts"
+              :key="prompt.id"
+              class="flex items-center justify-between rounded border border-gray-600 bg-container-secondary p-2 text-xs transition-colors hover:bg-container-tertiary"
+            >
+              <div class="mr-2 min-w-0 flex-1">
+                <div class="truncate text-xs font-medium text-on-surface" :title="prompt.condition_text || prompt.name">
+                  {{ prompt.condition_text || prompt.name }}
+                </div>
+                <div
+                  v-if="getConditionalDescription(prompt)"
+                  class="mt-0.5 truncate leading-tight text-xs text-primary-600 opacity-50 dark:text-primary-400 dark:opacity-60"
+                  :title="getConditionalDescription(prompt)"
+                >
+                  {{ getConditionalDescription(prompt) }}
+                </div>
+              </div>
+              <n-switch
+                :value="prompt.current_state ?? false"
                 size="small"
-                :bordered="false"
-                class="editorial-textarea"
-                :placeholder="hasOptions ? `补充背景、限制条件或语气要求… 支持粘贴图片 ${pasteShortcut}` : `输入本次内容… 支持粘贴图片 ${pasteShortcut}`"
-                :disabled="submitting"
-                :autosize="{ minRows: 12, maxRows: 20 }"
-                data-guide="popup-input"
-                @paste="handleImagePaste"
+                @update:value="(value: boolean) => handleConditionalToggle(prompt.id, value)"
               />
             </div>
           </div>
         </div>
-      </n-config-provider>
+      </div>
+
+      <div class="flex min-h-0 flex-col rounded-lg border border-gray-700 bg-black/20 p-3">
+        <div v-if="!loading" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+          <h4 class="text-sm font-medium text-white">
+            {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
+          </h4>
+
+          <div v-if="uploadedImages.length > 0" class="space-y-3">
+            <h4 class="text-sm font-medium text-white">
+              已添加的图片 ({{ uploadedImages.length }})
+            </h4>
+
+            <n-image-group>
+              <div class="flex flex-wrap gap-3">
+                <div
+                  v-for="(image, index) in uploadedImages"
+                  :key="`image-${index}`"
+                  class="relative"
+                >
+                  <n-image
+                    :src="image"
+                    width="100"
+                    height="100"
+                    object-fit="cover"
+                    class="rounded-lg border-2 border-gray-300 transition-all duration-200 cursor-pointer hover:border-primary-400"
+                  />
+
+                  <n-button
+                    class="absolute -right-2 -top-2 z-10"
+                    size="tiny"
+                    type="error"
+                    circle
+                    @click="removeImage(index)"
+                  >
+                    <template #icon>
+                      <div class="i-carbon-close h-3 w-3" />
+                    </template>
+                  </n-button>
+
+                  <div class="absolute bottom-1 left-1 z-5 flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white shadow-sm">
+                    {{ index + 1 }}
+                  </div>
+                </div>
+              </div>
+            </n-image-group>
+          </div>
+          <div v-else class="text-center">
+            <div class="text-xs text-on-surface-secondary">
+              💡 提示：可以在输入框中粘贴图片 ({{ pasteShortcut }})
+            </div>
+          </div>
+
+          <n-input
+            ref="textareaRef"
+            v-model:value="userInput"
+            type="textarea"
+            size="small"
+            :placeholder="hasOptions ? `您可以在这里添加补充说明... (支持粘贴图片 ${pasteShortcut})` : `请输入您的回复... (支持粘贴图片 ${pasteShortcut})`"
+            :disabled="submitting"
+            :autosize="{ minRows: 12, maxRows: 20 }"
+            data-guide="popup-input"
+            @paste="handleImagePaste"
+          />
+        </div>
+      </div>
     </template>
 
     <template v-else>
@@ -1036,46 +992,5 @@ defineExpose({
 .sortable-drag {
   opacity: 0.8;
   transform: rotate(5deg);
-}
-
-.editorial-textarea-shell {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-.editorial-textarea-shell:hover {
-  border-color: #b8b0a8;
-}
-
-.editorial-textarea-shell:focus-within {
-  border-color: #b45309;
-  box-shadow: 0 0 0 1px rgba(180, 83, 9, 0.16);
-}
-
-.editorial-textarea:deep(.n-input-wrapper) {
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-.editorial-textarea:deep(.n-input__border),
-.editorial-textarea:deep(.n-input__state-border) {
-  display: none !important;
-}
-
-.editorial-textarea:deep(textarea) {
-  min-height: 18rem;
-  background: transparent !important;
-  padding: 1rem 1rem 1.25rem !important;
-  color: #292524;
-  font-size: 0.9375rem;
-  line-height: 1.75;
-}
-
-.editorial-textarea:deep(textarea::placeholder) {
-  color: #a8a29e;
-}
-
-.editorial-checkbox:deep(.n-checkbox__label) {
-  color: #44403c;
 }
 </style>
