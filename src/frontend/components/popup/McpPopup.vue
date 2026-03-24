@@ -388,15 +388,15 @@ Here is my original instruction:
 <template>
   <div v-if="isVisible" class="flex min-h-0 flex-1 flex-col">
     <template v-if="isSplitLayout">
-      <div class="flex min-h-0 flex-1 flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-2 pt-2">
-          <div class="mb-1 rounded-lg bg-black-100 px-4 py-3 select-text" data-guide="popup-content">
+      <div class="flex min-h-0 flex-1 flex-col gap-3 px-2 pb-3 pt-2">
+        <div class="min-h-[160px] flex-[0_0_42%] overflow-y-auto scrollbar-thin rounded-lg bg-black-100 px-4 py-3 select-text" data-guide="popup-content">
+          <div class="min-h-full">
             <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" />
           </div>
         </div>
 
-        <div class="flex-shrink-0 bg-black px-4 pb-3 pt-2 select-text">
-          <div class="rounded-lg border border-black-200 bg-black-100/70 p-3">
+        <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-black-200 bg-black-100/70 p-3 select-text">
+          <div class="h-full min-h-0">
             <PopupInput
               ref="inputRef"
               :request="request"
