@@ -21,6 +21,7 @@ const localConfig = ref<ReplyConfig>({
   timeout_auto_submit_action: 'retry_xuyan',
   timeout_auto_submit_custom_input: '',
 })
+const timeoutSecondsDraft = ref<number | null>(400)
 
 function normalizeReplyConfig(config: Partial<ReplyConfig>): ReplyConfig {
   return {
@@ -39,6 +40,7 @@ async function loadConfig() {
   try {
     const config = await invoke('get_reply_config')
     localConfig.value = normalizeReplyConfig(config as Partial<ReplyConfig>)
+    timeoutSecondsDraft.value = localConfig.value.timeout_auto_submit_seconds
   }
   catch (error) {
     console.error('加载继续回复配置失败:', error)
@@ -49,6 +51,7 @@ async function loadConfig() {
 async function updateConfig() {
   try {
     localConfig.value = normalizeReplyConfig(localConfig.value)
+    timeoutSecondsDraft.value = localConfig.value.timeout_auto_submit_seconds
     await invoke('set_reply_config', { replyConfig: localConfig.value })
   }
   catch (error) {
@@ -57,8 +60,19 @@ async function updateConfig() {
 }
 
 function handleTimeoutSecondsUpdate(value: number | null) {
-  localConfig.value.timeout_auto_submit_seconds = Math.max(1, Math.floor(value ?? 400))
+  timeoutSecondsDraft.value = value
+
+  if (value === null)
+    return
+
+  localConfig.value.timeout_auto_submit_seconds = Math.max(1, Math.floor(value))
   updateConfig()
+}
+
+function restoreTimeoutSecondsIfEmpty() {
+  if (timeoutSecondsDraft.value === null) {
+    timeoutSecondsDraft.value = localConfig.value.timeout_auto_submit_seconds
+  }
 }
 
 onMounted(() => {
@@ -143,12 +157,13 @@ onMounted(() => {
         </div>
       </div>
       <n-input-number
-        :value="localConfig.timeout_auto_submit_seconds"
+        :value="timeoutSecondsDraft"
         size="small"
         :min="1"
         :step="10"
         placeholder="400"
         @update:value="handleTimeoutSecondsUpdate"
+        @blur="restoreTimeoutSecondsIfEmpty"
       />
     </div>
 

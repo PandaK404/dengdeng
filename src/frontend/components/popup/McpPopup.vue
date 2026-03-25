@@ -78,7 +78,9 @@ const timeoutAutoSubmitEnabled = ref(true)
 const timeoutAutoSubmitSeconds = ref(400)
 const timeoutAutoSubmitAction = ref<'retry_xuyan' | 'custom_input'>('retry_xuyan')
 const timeoutAutoSubmitCustomInput = ref('')
+const timeoutRemainingSeconds = ref<number | null>(null)
 let autoSubmitTimer: ReturnType<typeof window.setTimeout> | null = null
+let countdownTimer: ReturnType<typeof window.setInterval> | null = null
 let requestSequence = 0
 
 // 计算属性
@@ -96,6 +98,13 @@ const canSubmit = computed(() => {
 // 获取输入组件的状态文本
 const inputStatusText = computed(() => {
   return inputRef.value?.statusText || '等待输入...'
+})
+
+const timeoutCountdownText = computed(() => {
+  if (!timeoutAutoSubmitEnabled.value || timeoutRemainingSeconds.value === null)
+    return ''
+
+  return `倒计时 ${formatRemainingSeconds(timeoutRemainingSeconds.value)}`
 })
 
 // 加载继续回复配置
@@ -129,6 +138,13 @@ watch(() => props.appConfig.reply, (newReplyConfig) => {
   }
 }, { deep: true, immediate: true })
 
+watch([timeoutAutoSubmitEnabled, timeoutAutoSubmitSeconds], () => {
+  if (!props.request)
+    return
+
+  scheduleAutoSubmitTimer()
+})
+
 // Telegram事件监听器
 let telegramUnlisten: (() => void) | null = null
 
@@ -137,6 +153,31 @@ function clearAutoSubmitTimer() {
     window.clearTimeout(autoSubmitTimer)
     autoSubmitTimer = null
   }
+
+  if (countdownTimer !== null) {
+    window.clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+
+  timeoutRemainingSeconds.value = null
+}
+
+function formatRemainingSeconds(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  const seconds = safeSeconds % 60
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+function syncTimeoutRemaining(deadline: number) {
+  const remainingMs = Math.max(0, deadline - Date.now())
+  timeoutRemainingSeconds.value = Math.ceil(remainingMs / 1000)
 }
 
 function resolveTimeoutAutoSubmitInput() {
@@ -152,6 +193,13 @@ function scheduleAutoSubmitTimer() {
 
   if (!props.request || !timeoutAutoSubmitEnabled.value)
     return
+
+  const deadline = Date.now() + timeoutAutoSubmitSeconds.value * 1000
+  syncTimeoutRemaining(deadline)
+
+  countdownTimer = window.setInterval(() => {
+    syncTimeoutRemaining(deadline)
+  }, 1000)
 
   autoSubmitTimer = window.setTimeout(() => {
     void handleTimeoutAutoSubmit()
@@ -538,7 +586,8 @@ async function handleTimeoutAutoSubmit() {
     <div class="flex-shrink-0 bg-black-100 border-t-2 border-black-200" data-guide="popup-actions">
       <PopupActions
         :request="request" :loading="loading" :submitting="submitting" :can-submit="canSubmit"
-        :continue-reply-enabled="continueReplyEnabled" :input-status-text="inputStatusText"
+        :countdown-text="timeoutCountdownText" :continue-reply-enabled="continueReplyEnabled"
+        :input-status-text="inputStatusText"
         @submit="handleSubmit" @continue="handleContinue" @enhance="handleEnhance"
       />
     </div>

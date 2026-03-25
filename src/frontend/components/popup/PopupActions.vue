@@ -9,6 +9,7 @@ interface Props {
   submitting?: boolean
   canSubmit?: boolean
   connectionStatus?: string
+  countdownText?: string
   continueReplyEnabled?: boolean
   inputStatusText?: string
 }
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   submitting: false,
   canSubmit: false,
   connectionStatus: '已连接',
+  countdownText: '',
   continueReplyEnabled: true,
   inputStatusText: '',
 })
@@ -112,6 +114,7 @@ onMounted(() => {
         <div class="flex items-center gap-2 text-xs text-gray-600">
           <div class="w-2 h-2 rounded-full bg-primary-500" />
           <span class="font-medium">{{ connectionStatus }}</span>
+          <span v-if="countdownText" class="opacity-80">{{ countdownText }}</span>
           <span class="opacity-60">|</span>
           <span class="opacity-60">{{ statusText }}</span>
         </div>

@@ -626,11 +626,7 @@ defineExpose({
   <div :class="isSplitLayout ? 'grid h-full min-h-0 gap-4 grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]' : 'space-y-3'">
     <template v-if="isSplitLayout">
       <div class="flex min-h-0 flex-col gap-3 overflow-hidden rounded-lg border border-gray-700 bg-black/20 p-3">
-        <div class="flex min-h-0 flex-col gap-2" data-guide="predefined-options">
-          <h4 class="text-sm font-medium text-white">
-            预定义内容
-          </h4>
-
+        <div class="flex min-h-0 flex-col gap-1" data-guide="predefined-options">
           <div class="min-h-0 flex-1 overflow-y-auto pr-1">
             <n-space v-if="!loading && hasOptions" vertical size="small">
               <div
@@ -724,11 +720,7 @@ defineExpose({
       </div>
 
       <div class="flex min-h-0 flex-col rounded-lg border border-gray-700 bg-black/20 p-3">
-        <div v-if="!loading" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-          <h4 class="text-sm font-medium text-white">
-            {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
-          </h4>
-
+        <div v-if="!loading" class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
           <div v-if="uploadedImages.length > 0" class="space-y-3">
             <h4 class="text-sm font-medium text-white">
               已添加的图片 ({{ uploadedImages.length }})
@@ -792,13 +784,9 @@ defineExpose({
     <template v-else>
       <div
         v-if="!loading && hasOptions"
-        class="space-y-3"
+        class="space-y-2"
         data-guide="predefined-options"
       >
-        <h4 class="text-sm font-medium text-white">
-          预定义选项
-        </h4>
-
         <n-space vertical size="small">
           <div
             v-for="(option, index) in request!.predefined_options"
@@ -861,11 +849,7 @@ defineExpose({
           </n-image-group>
         </div>
 
-        <div v-if="!loading" class="space-y-3">
-          <h4 class="text-sm font-medium text-white">
-            {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
-          </h4>
-
+        <div v-if="!loading" class="space-y-2">
           <div v-if="customPromptEnabled && customPrompts.length > 0" class="space-y-2" data-guide="custom-prompts">
             <div class="flex items-center gap-2 text-xs text-on-surface-secondary">
               <div class="i-carbon-bookmark w-3 h-3 text-primary-500" />
